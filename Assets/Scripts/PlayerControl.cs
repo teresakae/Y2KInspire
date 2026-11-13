@@ -26,6 +26,10 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private float flyAngle = 90f;
     [Tooltip("Degrees per second the sprite turns toward travel.")]
     [SerializeField] private float turnRate = 900f;
+    [Tooltip("Tired (speedScale below 1): sway side to side this many degrees instead of flying.")]
+    [SerializeField] private float waddleAngle = 8f;
+    [Tooltip("Waddle sway speed (radians per second).")]
+    [SerializeField] private float waddleSpeed = 12f;
 
     // Set by CrowEnergy: 1 = normal, lower = tired.
     [HideInInspector] public float speedScale = 1f;
@@ -64,15 +68,18 @@ public class PlayerControl : MonoBehaviour
         if (facing != null) lastFacing = facing;
 
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
-        bool flying = moving && fly != null;
+        bool tired = speedScale < 1f;
+        bool flying = moving && fly != null && !tired;
         Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : null;
         if (flying) sr.sprite = fly;
         else if (walk != null && walk.Length > 0) sr.sprite = walk[(int)(Time.time * walkFps) % walk.Length];
         else sr.sprite = lastFacing;
-        if (flyShadow != null) flyShadow.SetActive(moving);
+        if (flyShadow != null) flyShadow.SetActive(moving && !tired);
 
-        // Flying: turn toward travel. Stopped: back upright.
-        var turn = flying ? Quaternion.Euler(0, 0, Mathf.Atan2(y, x) * Mathf.Rad2Deg + flyAngle) : Quaternion.identity;
+        // Flying: turn toward travel. Tired and moving: waddle. Stopped: back upright.
+        var turn = flying ? Quaternion.Euler(0, 0, Mathf.Atan2(y, x) * Mathf.Rad2Deg + flyAngle)
+                 : tired && moving ? Quaternion.Euler(0, 0, Mathf.Sin(Time.time * waddleSpeed) * waddleAngle)
+                 : Quaternion.identity;
         transform.rotation = Quaternion.RotateTowards(transform.rotation, turn, turnRate * Time.deltaTime);
 
         // The shadow is a child, so undo the spin: keep it flat at its original offset.
