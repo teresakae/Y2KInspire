@@ -21,6 +21,22 @@ A forest the player can't see into. Dusty golden grass, green trees, a dirt path
 - Squash-and-stretch juice on movement and impacts.
 - URP 2D Lights for the fog mood.
 
+Prototype colours (not artist-final): ground = `Main Camera > Camera > Background` dusty golden grass `#C2A55E`; fog = dusky plum-grey `#6B6170` (`Fog Grid > FogGrid > Fog Color`). Warm ground against cool plum fog keeps the two apart and stays away from the olive canopy.
+
+Draw order (`SpriteRenderer > Order in Layer`, all on the Default sorting layer):
+
+| Order | What |
+|---|---|
+| 20 | Snake's "!" eaten mark |
+| 10 | Fog (`Fog Grid > Sorting Order`) |
+| 4 | Crow |
+| 3 | Cow (draws over the canopy) |
+| 2 | Fruit (`PF_Fruit`) |
+| 1 | Tree canopy |
+| 0 | Tree trunk |
+| -1 | Shadows |
+| -5 | Snake (anything below 10 hides under fog) |
+
 Palette (approximate, from the artist's sheet):
 
 | Use | Hex |

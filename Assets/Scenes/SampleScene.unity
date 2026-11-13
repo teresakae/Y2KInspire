@@ -808,7 +808,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.761, g: 0.647, b: 0.369, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1352,16 +1352,16 @@ MonoBehaviour:
   crow: {fileID: 1530624303}
   openAtStart:
   - {fileID: 1433807710}
-  areaSize: {x: 20, y: 12}
+  areaSize: {x: 24, y: 12}
   clearRadius: 1
   edgeSoftness: 0.2
   pixelsPerUnit: 16
   cellSize: 0.25
-  fogColor: {r: 0.29, g: 0.33, b: 0.16, a: 1}
+  fogColor: {r: 0.42, g: 0.38, b: 0.44, a: 1}
   sortingOrder: 10
   cow: {fileID: 1478295341}
-  regrowDelay: 5
-  regrowSpeed: 0.5
+  regrowDelay: 10
+  regrowSpeed: 0.25
   cowSafeRadius: 2
   revealThreshold: 0.5
 --- !u!4 &1217700677
@@ -1373,7 +1373,7 @@ Transform:
   m_GameObject: {fileID: 1217700675}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.17688, y: -0.05833, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1513,7 +1513,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 3
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2690792559708188323, guid: 1c9af95b52a384548b6a6626dfd2cf04, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1728,7 +1728,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2690792559708188323, guid: cbbf2f1b2b2054b4183adef0702eaf9c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

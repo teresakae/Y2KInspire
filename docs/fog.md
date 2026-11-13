@@ -47,18 +47,18 @@ All on `Fog Grid > Fog Grid`.
 | Who clears fog | Fog Grid | Crow | Crow |
 | Who fog won't grow under | Fog Grid | Cow | Cow |
 | Start clearings | Fog Grid | Open At Start | Clearing (1 entry) |
-| Fog area in units | Fog Grid | Area Size | 20 x 12 |
+| Fog area in units | Fog Grid | Area Size | 24 x 12 (covers the camera view up to about 2.4:1 at camera size 5) |
 | Crow's hole radius | Fog Grid | Clear Radius | 1 (script default 0.75) |
 | Soft edge width | Fog Grid | Edge Softness | 0.2 |
 | Fog look resolution | Fog Grid | Pixels Per Unit | 16 |
 | Blocking resolution | Fog Grid | Cell Size | 0.25 |
-| Fog colour | Fog Grid | Fog Color | r 0.29, g 0.33, b 0.16, a 1 |
+| Fog colour | Fog Grid | Fog Color | dusky plum-grey r 0.42, g 0.38, b 0.44, a 1 (≈ #6B6170) |
 | Draw order | Fog Grid | Sorting Order | 10 |
-| Seconds before fog grows back | Fog Grid | Regrow Delay | 5 |
-| Regrow rate (fraction/s) | Fog Grid | Regrow Speed | 0.5 |
+| Seconds before fog grows back | Fog Grid | Regrow Delay | 10 |
+| Regrow rate (fraction/s) | Fog Grid | Regrow Speed | 0.25 (full fog 4 s after regrowth starts, so about 14 s in all) |
 | No-regrow radius around cow | Fog Grid | Cow Safe Radius | 2 (script default 0.75) |
 | How clear counts as revealed (snakes wake) | Fog Grid | Reveal Threshold | 0.5 (default) |
-| Fog area centre | Fog Grid | Transform > Position | -0.177, -0.058, 0 |
+| Fog area centre | Fog Grid | Transform > Position | 0, 0, 0 (camera centre) |
 | Start clearing centre and size | Clearing | Transform > Position / Scale | -1.621, 0.01 / X scale 4 (radius 2) |
 | Camera view | Main Camera | Camera > Size | 5 (orthographic) |
 
