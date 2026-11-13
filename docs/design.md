@@ -110,10 +110,10 @@ Gimersia Inspire 2026 (Indonesia).
 |---|---|---|
 | Fog clearing and blocking | Partial | Crow clears fog and the cow is blocked. Fog also grows back after 5 s, which the design doesn't say either way. See `fog.md`. |
 | Two-player movement | Partial | Cow on WASD, crow on arrows, same keyboard. No gamepad. See `players.md`. |
-| Crow energy and forced landing | Not yet | |
-| Crow lands / eats fruit | Not yet | "Landed" is not a state. See `players.md`. |
-| Trees and fruit | Not yet | |
-| Cow rams trees | Not yet | |
+| Crow energy and forced landing | Partial | Energy drains while moving, bar, slow hop at zero. No landing state. Not wired in the scene yet. See `players.md`. |
+| Crow lands / eats fruit | Partial | Eats by flying over the fruit; "landed" is not a state. Not wired in the scene yet. See `players.md`. |
+| Trees and fruit | Partial | `FruitTree` and `Fruit` scripts exist. Not wired in the scene yet. See `trees.md`. |
+| Cow rams trees | Partial | Charged ram on Space (`CowRam`). Not wired in the scene yet. See `players.md`. |
 | Moo guidance (FMOD) | Not yet | FMOD is installed, no events. |
 | Snakes (hidden, warnings, kill, eat) | Not yet | |
 | Cow rams snakes | Not yet | |

@@ -1,30 +1,50 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>Moves one animal from the keyboard and swaps its sprite; the crow also flies, turns and shows a shadow.</summary>
 public class PlayerControl : MonoBehaviour
 {
     public enum Controls { WASD, Arrows }
-    public Controls controls;
-    public float movSpeed;
-    public Sprite front, back, left, right;
-    public Sprite fly;               // shown while moving (optional)
-    public GameObject flyShadow;     // shown while moving (optional)
-    float speedX, speedY;
+
+    [Tooltip("Which keys move this animal.")]
+    [SerializeField] private Controls controls;
+    [Tooltip("Top speed in units per second.")]
+    [SerializeField] private float movSpeed;
+    [Tooltip("Facing sprites.")]
+    [SerializeField] private Sprite front, back, left, right;
+    [Tooltip("Shown while moving (optional). Leave empty for no change.")]
+    [SerializeField] private Sprite fly;
+    [Tooltip("Shown while moving (optional).")]
+    [SerializeField] private GameObject flyShadow;
+    [Tooltip("Walk frames while moving left (optional). Empty = plain facing sprite.")]
+    [SerializeField] private Sprite[] walkLeft;
+    [Tooltip("Walk frames while moving right (optional). Empty = plain facing sprite.")]
+    [SerializeField] private Sprite[] walkRight;
+    [Tooltip("Walk frames per second.")]
+    [SerializeField] private float walkFps = 8f;
+    [Tooltip("Rotation offset so the fly sprite's head points along travel. fly.png has its head at the bottom, so 90.")]
+    [SerializeField] private float flyAngle = 90f;
+    [Tooltip("Degrees per second the sprite turns toward travel.")]
+    [SerializeField] private float turnRate = 900f;
+
+    // Set by CrowEnergy: 1 = normal, lower = tired.
+    [HideInInspector] public float speedScale = 1f;
+    // Last non-zero input direction. CowRam aims with it.
+    [HideInInspector] public Vector2 lastDir = Vector2.down;
+
     Rigidbody2D rb;
     SpriteRenderer sr;
     Sprite lastFacing;
     Vector3 shadowOffset;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-     rb = GetComponent<Rigidbody2D>();
-     sr = GetComponent<SpriteRenderer>();
-     lastFacing = sr.sprite;
-     if (flyShadow != null) shadowOffset = flyShadow.transform.position - transform.position;
+        rb = GetComponent<Rigidbody2D>();
+        sr = GetComponent<SpriteRenderer>();
+        lastFacing = sr.sprite;
+        if (flyShadow != null) shadowOffset = flyShadow.transform.position - transform.position;
     }
 
-    // Update is called once per frame
     void Update()
     {
         // ponytail: keyboard only; add gamepad or an Input Actions asset if needed
@@ -36,19 +56,24 @@ public class PlayerControl : MonoBehaviour
             x = ((wasd ? kb.dKey : kb.rightArrowKey).isPressed ? 1 : 0) - ((wasd ? kb.aKey : kb.leftArrowKey).isPressed ? 1 : 0);
             y = ((wasd ? kb.wKey : kb.upArrowKey).isPressed ? 1 : 0) - ((wasd ? kb.sKey : kb.downArrowKey).isPressed ? 1 : 0);
         }
+        bool moving = x != 0 || y != 0;
+        if (moving) lastDir = new Vector2(x, y);
+
         // Face the way we're moving; left/right wins on diagonals. Standing still keeps the last facing.
         Sprite facing = x > 0 ? right : x < 0 ? left : y > 0 ? back : y < 0 ? front : null;
         if (facing != null) lastFacing = facing;
 
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
-        bool moving = x != 0 || y != 0;
-        sr.sprite = moving && fly != null ? fly : lastFacing;
+        bool flying = moving && fly != null;
+        Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : null;
+        if (flying) sr.sprite = fly;
+        else if (walk != null && walk.Length > 0) sr.sprite = walk[(int)(Time.time * walkFps) % walk.Length];
+        else sr.sprite = lastFacing;
         if (flyShadow != null) flyShadow.SetActive(moving);
 
-        // Flying: turn toward travel (sprite's top = forward). Stopped: back upright.
-        bool flying = moving && fly != null;
-        var turn = flying ? Quaternion.Euler(0, 0, Mathf.Atan2(y, x) * Mathf.Rad2Deg - 90) : Quaternion.identity;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, turn, 900 * Time.deltaTime);
+        // Flying: turn toward travel. Stopped: back upright.
+        var turn = flying ? Quaternion.Euler(0, 0, Mathf.Atan2(y, x) * Mathf.Rad2Deg + flyAngle) : Quaternion.identity;
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, turn, turnRate * Time.deltaTime);
 
         // The shadow is a child, so undo the spin: keep it flat at its original offset.
         if (flyShadow != null)
@@ -57,8 +82,6 @@ public class PlayerControl : MonoBehaviour
             flyShadow.transform.position = transform.position + shadowOffset;
         }
 
-        speedX = x * movSpeed;
-        speedY = y * movSpeed;
-        rb.linearVelocity = new Vector2(speedX, speedY);
+        rb.linearVelocity = new Vector2(x, y) * movSpeed * speedScale;
     }
 }

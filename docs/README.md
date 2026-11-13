@@ -4,7 +4,8 @@ One file per system. Each describes how that system works right now, where it li
 |---|---|---|
 | design.md | What the game is meant to be, and a status table of what exists | Scope, new features, anything that changes how the game plays |
 | fog.md | The fog texture, fog colliders, clearing and regrowth (`FogGrid.cs`) | Fog, the Fog Grid object, the start clearing, anything that blocks the cow |
-| players.md | Cow and crow movement, input, sprites, shadows (`PlayerControl.cs`) | Cow or Crow objects, controls, speed, sprites |
+| players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy |
+| trees.md | Fruit trees and fruit (`FruitTree.cs`, `Fruit.cs`) | Trees, fruit, anything the cow rams for food |
 
 ## Run it
 
