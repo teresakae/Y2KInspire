@@ -73,6 +73,9 @@ public class CowRam : MonoBehaviour
         }
     }
 
+    // Snakes check this: only a dash charged past Min Charge kills them.
+    public bool IsStrongDash => dashing && dashCharge >= minCharge;
+
     // The cow drives the hit (the tree doesn't check for the cow) so there is no
     // collision-callback order to worry about.
     void OnCollisionEnter2D(Collision2D collision)
@@ -91,7 +94,7 @@ public class CowRam : MonoBehaviour
 
     bool TryHitTree(Collision2D collision)
     {
-        if (dashCharge < minCharge || !collision.gameObject.TryGetComponent(out FruitTree tree)) return false;
+        if (!IsStrongDash || !collision.gameObject.TryGetComponent(out FruitTree tree)) return false;
         // Dashing away from a trunk we're touching shouldn't count as a ram.
         Vector2 toTree = collision.transform.position - transform.position;
         if (Vector2.Dot(player.lastDir, toTree) <= 0f) return false;

@@ -46,6 +46,9 @@ public class CrowEnergy : MonoBehaviour
         if (canvas.renderMode == RenderMode.WorldSpace) canvas.transform.position = (Vector2)transform.position + barOffset;
     }
 
+    // Standing still counts as landed; out of energy counts as forced down (still true while hopping).
+    public bool IsGrounded => energy <= 0f || rb.linearVelocity.sqrMagnitude <= 0.01f;
+
     public void Eat(float amount)
     {
         energy = Mathf.Clamp(energy + amount, 0f, maxEnergy);

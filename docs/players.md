@@ -38,9 +38,11 @@ The cow has `Fly` and `Fly Shadow` empty, so the fly parts of steps 4 to 6 do no
 
 The cow calls the tree, not the other way round, so there is no collision-callback order to worry about. See `trees.md`.
 
+`IsStrongDash` (public) is true while dashing with a dash charge of at least `Min Charge`. `Snake` checks it to die to the cow, see `snakes.md`.
+
 ## Crow energy
 
-`CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it.
+`CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it. `IsGrounded` (public) is true when energy is 0 or the Rigidbody2D is standing still, so standing still counts as landed and a tired hopping crow still counts as down. `Snake` reads it, see `snakes.md`.
 
 ## Tuning
 
@@ -90,7 +92,6 @@ On the `PlayerControl` component of each object.
 - Gamepad support (design: keyboard now, gamepads later). The script reads `Keyboard.current` only. Option: use `InputSystem_Actions.inputactions` with one action map per player.
 - True landing state for the crow. "Landed" is just "not moving". No landing key, no vulnerability.
 - The crow still clears fog while tired.
-- Cow ramming snakes.
 - Fruit per tree is unlimited.
 - Juice beyond the charge squash.
 - Restart, win and lose: no link between player state and level flow.

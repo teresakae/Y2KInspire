@@ -115,10 +115,10 @@ Gimersia Inspire 2026 (Indonesia).
 | Trees and fruit | Partial | `FruitTree` and `Fruit` scripts exist. Not wired in the scene yet. See `trees.md`. |
 | Cow rams trees | Partial | Charged ram on Space (`CowRam`). Not wired in the scene yet. See `players.md`. |
 | Moo guidance (FMOD) | Not yet | FMOD is installed, no events. |
-| Snakes (hidden, warnings, kill, eat) | Not yet | |
-| Cow rams snakes | Not yet | |
+| Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
+| Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
 | Win condition | Not yet | |
-| Lose and restart | Not yet | |
+| Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
 | Start menu | Not yet | |
 | UI feedback | Not yet | |
 | LV_01 | Not yet | Only the prototype scene exists. |

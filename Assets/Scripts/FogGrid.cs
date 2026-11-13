@@ -8,19 +8,33 @@ using UnityEngine;
 // texture (fog amount + last-cleared time in textures) when maps get big or the art fog arrives.
 public class FogGrid : MonoBehaviour
 {
-    public Transform crow;                   // clears fog as it moves
-    public Transform[] openAtStart;          // pre-cleared circles; diameter = the object's X scale
-    public Vector2 areaSize = new Vector2(20, 12);
-    public float clearRadius = 0.75f;
-    public float edgeSoftness = 0.2f;        // width of the fade at the hole's edge, in units
-    public int pixelsPerUnit = 16;           // how fine the fog looks
-    public float cellSize = 0.25f;           // how fine the blocking is
-    public Color fogColor = new Color(0.29f, 0.33f, 0.16f);
-    public int sortingOrder = 10;
-    public Transform cow;                    // fog never regrows under the cow
-    public float regrowDelay = 5f;           // seconds after the crow last cleared a spot
-    public float regrowSpeed = 0.5f;         // fraction of full fog per second
-    public float cowSafeRadius = 0.75f;
+    [Tooltip("Clears fog as it moves.")]
+    [SerializeField] private Transform crow;
+    [Tooltip("Pre-cleared circles; diameter = the object's X scale.")]
+    [SerializeField] private Transform[] openAtStart;
+    [Tooltip("Width and height of the fogged area, in units.")]
+    [SerializeField] private Vector2 areaSize = new Vector2(20, 12);
+    [Tooltip("Radius the crow clears around itself.")]
+    [SerializeField] private float clearRadius = 0.75f;
+    [Tooltip("Width of the fade at the hole's edge, in units.")]
+    [SerializeField] private float edgeSoftness = 0.2f;
+    [Tooltip("How fine the fog looks.")]
+    [SerializeField] private int pixelsPerUnit = 16;
+    [Tooltip("How fine the blocking is.")]
+    [SerializeField] private float cellSize = 0.25f;
+    [SerializeField] private Color fogColor = new Color(0.29f, 0.33f, 0.16f);
+    [Tooltip("Things below this order hide under the fog (snakes).")]
+    [SerializeField] private int sortingOrder = 10;
+    [Tooltip("Fog never regrows under the cow.")]
+    [SerializeField] private Transform cow;
+    [Tooltip("Seconds after the crow last cleared a spot before it starts regrowing.")]
+    [SerializeField] private float regrowDelay = 5f;
+    [Tooltip("Fraction of full fog regrown per second.")]
+    [SerializeField] private float regrowSpeed = 0.5f;
+    [SerializeField] private float cowSafeRadius = 0.75f;
+    [Tooltip("A spot counts as revealed when its fog is below this (0 = clear, 1 = full fog).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float revealThreshold = 0.5f;
 
     Collider2D cowCollider;
     Texture2D tex;
@@ -99,6 +113,16 @@ public class FogGrid : MonoBehaviour
             tex.Apply();
             dirty = false;
         }
+    }
+
+    // Snakes ask this: hidden ones stay asleep.
+    public bool IsClear(Vector2 pos)
+    {
+        if (fog == null) return false;   // before Start everything is fogged
+        int x = Mathf.FloorToInt((pos.x - origin.x) * pixelsPerUnit);
+        int y = Mathf.FloorToInt((pos.y - origin.y) * pixelsPerUnit);
+        if (x < 0 || y < 0 || x >= tex.width || y >= tex.height) return true;   // no fog outside the area
+        return fog[y * tex.width + x] < revealThreshold;
     }
 
     void Clear(Vector2 center, float radius)

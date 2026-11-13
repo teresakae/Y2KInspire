@@ -57,6 +57,7 @@ All on `Fog Grid > Fog Grid`.
 | Seconds before fog grows back | Fog Grid | Regrow Delay | 5 |
 | Regrow rate (fraction/s) | Fog Grid | Regrow Speed | 0.5 |
 | No-regrow radius around cow | Fog Grid | Cow Safe Radius | 2 (script default 0.75) |
+| How clear counts as revealed (snakes wake) | Fog Grid | Reveal Threshold | 0.5 (default) |
 | Fog area centre | Fog Grid | Transform > Position | -0.177, -0.058, 0 |
 | Start clearing centre and size | Clearing | Transform > Position / Scale | -1.621, 0.01 / X scale 4 (radius 2) |
 | Camera view | Main Camera | Camera > Size | 5 (orthographic) |
@@ -72,6 +73,8 @@ Fog opacity is the alpha of `Fog Color` (currently 1, fully opaque).
 - Fog colliders and the fog sprite are built in `Start`. Changing `Area Size`, `Pixels Per Unit` or `Cell Size` in Play mode does nothing until the next Play.
 - `Fog Colliders` copies the Fog Grid's layer. If layers are added later, check that the cow collides with it.
 - The `Cow` and `Crow` fields are scene references. If either is empty, the matching behaviour is skipped without an error (no clearing, or no cow protection).
+- `IsClear(position)` is the one public call: true where fog is below `Reveal Threshold` or outside the fog area, false before `Start`. Snakes use it to wake (see `snakes.md`).
+- The fields are `[SerializeField] private` now (same names, so scene values kept). Other scripts can't change them at runtime.
 - The start-clearing Gizmo (cyan circle) shows in the Scene view. Selecting Fog Grid shows the fog area as a white box.
 
 ## Not built yet
