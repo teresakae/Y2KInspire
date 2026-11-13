@@ -671,12 +671,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   controls: 0
   movSpeed: 3
-  front: {fileID: -2690792559708188323, guid: 1c9af95b52a384548b6a6626dfd2cf04, type: 3}
-  back: {fileID: -4571828015118065507, guid: 3547cae8cd89a42c6acb5fc222174867, type: 3}
-  left: {fileID: -2208510542369132325, guid: fef907149599c412d92ae068aee7ff84, type: 3}
-  right: {fileID: -4345969612696422427, guid: b3d514752d83e46dd9cab9f6f3557530, type: 3}
+  front: {fileID: -8995647308318357709, guid: d0946d2186b334913809d96fccf69b27, type: 3}
+  back: {fileID: -1931142017177096127, guid: d0946d2186b334913809d96fccf69b27, type: 3}
+  left: {fileID: -8490128260025338036, guid: d0946d2186b334913809d96fccf69b27, type: 3}
+  right: {fileID: 6523705570730454540, guid: d0946d2186b334913809d96fccf69b27, type: 3}
   fly: {fileID: 0}
   flyShadow: {fileID: 0}
+  walkLeft:
+  - {fileID: -4224260300399177352, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  - {fileID: 4895517091083070582, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  - {fileID: 4023955380990177945, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  walkRight:
+  - {fileID: 5784731289588789516, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  - {fileID: -7015965145421862659, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  - {fileID: -1926287871043691681, guid: eebbab1933770441cae94f7a696b7f4f, type: 3}
+  walkFps: 8
+  flyAngle: 90
+  turnRate: 900
+  speedScale: 1
+  lastDir: {x: 0, y: -1}
 --- !u!212 &1478295340
 SpriteRenderer:
   serializedVersion: 3
@@ -969,6 +982,13 @@ MonoBehaviour:
   right: {fileID: -4345969612696422427, guid: b84478c92110f410dbbef9ac63160cce, type: 3}
   fly: {fileID: 7761268207109217435, guid: 7af556221879d4e55ab43b7196f15e51, type: 3}
   flyShadow: {fileID: 187637276}
+  walkLeft: []
+  walkRight: []
+  walkFps: 8
+  flyAngle: 90
+  turnRate: 900
+  speedScale: 1
+  lastDir: {x: 0, y: -1}
 --- !u!1 &1702552084
 GameObject:
   m_ObjectHideFlags: 0
