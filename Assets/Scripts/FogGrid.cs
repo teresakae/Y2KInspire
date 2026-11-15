@@ -5,7 +5,8 @@ using UnityEngine;
 // Fog the crow cleared grows back after regrowDelay, except start clearings and where the cow stands.
 // ponytail: every pixel (~60k) and cell (~4k) is looped each frame, and the whole texture is
 // re-uploaded when anything changed; fine for one screen. Move regrowth to a shader / render
-// texture (fog amount + last-cleared time in textures) when maps get big or the art fog arrives.
+// texture (fog amount + last-cleared time in textures) when maps get big.
+// Cloud look: puff textures are stamped at random once in Start into a brightness map, so it costs nothing per frame.
 public class FogGrid : MonoBehaviour
 {
     [Tooltip("Clears fog as it moves.")]
@@ -18,11 +19,26 @@ public class FogGrid : MonoBehaviour
     [SerializeField] private float clearRadius = 0.75f;
     [Tooltip("Width of the fade at the hole's edge, in units.")]
     [SerializeField] private float edgeSoftness = 0.2f;
+    [Tooltip("How far the hole's edge wobbles in and out, in units. 0 = perfect circle.")]
+    [SerializeField] private float edgeNoise = 0.4f;
+    [Tooltip("Wobbles per unit along the edge. Higher = finer, wispier edge.")]
+    [SerializeField] private float edgeNoiseScale = 2f;
     [Tooltip("How fine the fog looks.")]
     [SerializeField] private int pixelsPerUnit = 16;
     [Tooltip("How fine the blocking is.")]
     [SerializeField] private float cellSize = 0.25f;
     [SerializeField] private Color fogColor = new Color(0.29f, 0.33f, 0.16f);
+    [Tooltip("Grey-on-black cloud images stamped across the fog for its look. Need Read/Write ticked in import settings. Empty = flat colour.")]
+    [SerializeField] private Texture2D[] puffTextures;
+    [Tooltip("How many puffs are stamped.")]
+    [SerializeField] private int puffCount = 40;
+    [Tooltip("Puff size in units, min (x) to max (y).")]
+    [SerializeField] private Vector2 puffSizeRange = new Vector2(3f, 6f);
+    [Tooltip("Brightness of the thinnest fog, relative to Fog Color. Lower = stronger cloud shapes. Fog stays opaque either way.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float thinShade = 0.7f;
+    [Tooltip("Change for a different random puff layout.")]
+    [SerializeField] private int seed = 0;
     [Tooltip("Things below this order hide under the fog (snakes).")]
     [SerializeField] private int sortingOrder = 10;
     [Tooltip("Fog never regrows under the cow.")]
@@ -57,8 +73,13 @@ public class FogGrid : MonoBehaviour
         int h = Mathf.CeilToInt(areaSize.y * pixelsPerUnit);
         tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
         pixels = new Color32[w * h];
-        Color32 fog = fogColor;
-        for (int i = 0; i < pixels.Length; i++) pixels[i] = fog;
+        float[] look = BuildLook(w, h);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            Color c = fogColor * Mathf.Lerp(thinShade, 1f, look[i]);
+            c.a = fogColor.a;
+            pixels[i] = c;
+        }
         this.fog = new float[pixels.Length];
         lastCleared = new float[pixels.Length];
         for (int i = 0; i < this.fog.Length; i++) { this.fog[i] = 1f; lastCleared[i] = -1000f; }
@@ -115,6 +136,50 @@ public class FogGrid : MonoBehaviour
         }
     }
 
+    // Stamps random puffs into a 0..1 brightness map, brightest stamp wins.
+    float[] BuildLook(int w, int h)
+    {
+        var look = new float[w * h];
+        if (puffTextures == null || puffTextures.Length == 0) return look;
+        var oldState = Random.state;
+        Random.InitState(seed);
+        for (int n = 0; n < puffCount; n++)
+        {
+            Texture2D t = puffTextures[Random.Range(0, puffTextures.Length)];
+            if (t == null) continue;
+            if (!t.isReadable) { Debug.LogError($"{name}: puff texture {t.name} needs Read/Write ticked"); break; }
+            float bright = Brightest(t);   // so a dim image and a bright image both reach full shade
+            Vector2 c = new Vector2(Random.Range(0f, w), Random.Range(0f, h));
+            float size = Random.Range(puffSizeRange.x, puffSizeRange.y) * pixelsPerUnit;
+            float a = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(a), sin = Mathf.Sin(a);
+            int r = Mathf.CeilToInt(size * 0.71f);   // half the diagonal, so rotated corners fit
+            for (int y = Mathf.Max(0, (int)c.y - r); y < Mathf.Min(h, (int)c.y + r); y++)
+                for (int x = Mathf.Max(0, (int)c.x - r); x < Mathf.Min(w, (int)c.x + r); x++)
+                {
+                    float dx = x - c.x, dy = y - c.y;
+                    float u = (dx * cos + dy * sin) / size + 0.5f;
+                    float v = (-dx * sin + dy * cos) / size + 0.5f;
+                    if (u < 0f || u > 1f || v < 0f || v > 1f) continue;
+                    float b = Mathf.Clamp01(t.GetPixelBilinear(u, v).grayscale / bright);
+                    int i = y * w + x;
+                    if (b > look[i]) look[i] = b;
+                }
+        }
+        Random.state = oldState;   // don't disturb other scripts' randomness
+        return look;
+    }
+
+    // Coarse 64x64 scan is enough to find the peak of a blurry cloud.
+    float Brightest(Texture2D t)
+    {
+        float max = 0.01f;
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++)
+                max = Mathf.Max(max, t.GetPixelBilinear(x / 63f, y / 63f).grayscale);
+        return max;
+    }
+
     // Snakes ask this: hidden ones stay asleep.
     public bool IsClear(Vector2 pos)
     {
@@ -128,42 +193,49 @@ public class FogGrid : MonoBehaviour
     void Clear(Vector2 center, float radius)
     {
         // Fog pixels: clear inside, fading back to full fog over edgeSoftness at the rim.
+        // The rim is pushed in and out by Perlin noise fixed in world space, so edges look ragged, not round.
         float soft = Mathf.Clamp(edgeSoftness, 0.001f, radius);
-        int x0 = Mathf.Max(0, Mathf.FloorToInt((center.x - radius - origin.x) * pixelsPerUnit));
-        int x1 = Mathf.Min(tex.width - 1, Mathf.CeilToInt((center.x + radius - origin.x) * pixelsPerUnit));
-        int y0 = Mathf.Max(0, Mathf.FloorToInt((center.y - radius - origin.y) * pixelsPerUnit));
-        int y1 = Mathf.Min(tex.height - 1, Mathf.CeilToInt((center.y + radius - origin.y) * pixelsPerUnit));
+        float reach = radius + edgeNoise;
+        int x0 = Mathf.Max(0, Mathf.FloorToInt((center.x - reach - origin.x) * pixelsPerUnit));
+        int x1 = Mathf.Min(tex.width - 1, Mathf.CeilToInt((center.x + reach - origin.x) * pixelsPerUnit));
+        int y0 = Mathf.Max(0, Mathf.FloorToInt((center.y - reach - origin.y) * pixelsPerUnit));
+        int y1 = Mathf.Min(tex.height - 1, Mathf.CeilToInt((center.y + reach - origin.y) * pixelsPerUnit));
         for (int y = y0; y <= y1; y++)
             for (int x = x0; x <= x1; x++)
             {
                 Vector2 p = origin + new Vector2(x + 0.5f, y + 0.5f) / pixelsPerUnit;
-                float t = Mathf.Clamp01((Vector2.Distance(p, center) - (radius - soft)) / soft);
+                float t = Mathf.Clamp01((Vector2.Distance(p, center) + Wobble(p) - (radius - soft)) / soft);
                 int i = y * tex.width + x;
                 if (t < fog[i]) { fog[i] = t; dirty = true; }
                 if (t < 1f) lastCleared[i] = Time.time;     // anywhere inside the circle: keep it clear while the crow stays
             }
 
-        // Colliders: switch off every cell whose centre is inside the circle.
-        int cx0 = Mathf.Max(0, Mathf.FloorToInt((center.x - radius - origin.x) / cellSize));
-        int cx1 = Mathf.Min(cells.GetLength(0) - 1, Mathf.FloorToInt((center.x + radius - origin.x) / cellSize));
-        int cy0 = Mathf.Max(0, Mathf.FloorToInt((center.y - radius - origin.y) / cellSize));
-        int cy1 = Mathf.Min(cells.GetLength(1) - 1, Mathf.FloorToInt((center.y + radius - origin.y) / cellSize));
+        // Colliders: switch off every cell whose centre now looks clear, so blocking follows the ragged edge.
+        int cx0 = Mathf.Max(0, Mathf.FloorToInt((center.x - reach - origin.x) / cellSize));
+        int cx1 = Mathf.Min(cells.GetLength(0) - 1, Mathf.FloorToInt((center.x + reach - origin.x) / cellSize));
+        int cy0 = Mathf.Max(0, Mathf.FloorToInt((center.y - reach - origin.y) / cellSize));
+        int cy1 = Mathf.Min(cells.GetLength(1) - 1, Mathf.FloorToInt((center.y + reach - origin.y) / cellSize));
         for (int x = cx0; x <= cx1; x++)
             for (int y = cy0; y <= cy1; y++)
             {
                 Vector2 c = origin + new Vector2(x + 0.5f, y + 0.5f) * cellSize;
-                if (cells[x, y].enabled && (c - center).sqrMagnitude <= radius * radius)
+                if (cells[x, y].enabled && IsClear(c))
                     cells[x, y].enabled = false;
             }
+    }
+
+    // -edgeNoise..+edgeNoise, smooth and fixed per world spot. Added to a distance, it bends circles into ragged blobs.
+    float Wobble(Vector2 p)
+    {
+        return (Mathf.PerlinNoise(p.x * edgeNoiseScale + 100f, p.y * edgeNoiseScale + 100f) - 0.5f) * 2f * edgeNoise;   // +100: Perlin repeats near 0
     }
 
     void Regrow()
     {
         float grow = regrowSpeed * Time.deltaTime;
-        float safeSqr = cowSafeRadius * cowSafeRadius;
         int w = tex.width;
 
-        // Fog pixels: fade back in towards the rest state, but not under the cow.
+        // Fog pixels: fade back in towards the rest state, but not in the cow's ragged safe zone.
         for (int y = 0; y < tex.height; y++)
             for (int x = 0; x < w; x++)
             {
@@ -172,15 +244,15 @@ public class FogGrid : MonoBehaviour
                 if (cow != null)
                 {
                     Vector2 p = origin + new Vector2(x + 0.5f, y + 0.5f) / pixelsPerUnit;
-                    if (((Vector2)cow.position - p).sqrMagnitude <= safeSqr) continue;
+                    float d = Vector2.Distance(cow.position, p);
+                    if (d <= cowSafeRadius + edgeNoise && d + Wobble(p) <= cowSafeRadius) continue;   // first test skips the noise for far pixels
                 }
                 fog[i] = Mathf.Min(restFog[i], fog[i] + grow);
                 dirty = true;
             }
 
-        // Colliders: re-enable a cell only if it was blocking at rest, its centre pixel is fully fogged
-        // again, and the cow isn't close.
-        float cellSafe = cowSafeRadius + cellSize / 2f;
+        // Colliders: re-enable a cell only if it was blocking at rest and its centre pixel is fully fogged
+        // again (never true inside the safe zone, so blocking follows its ragged edge).
         // Also never re-enable a cell touching the cow's own collider, whatever its size.
         Bounds cowBox = cowCollider != null ? cowCollider.bounds : default;
         cowBox.Expand(cellSize);
@@ -189,7 +261,6 @@ public class FogGrid : MonoBehaviour
             {
                 if (cells[x, y].enabled || !restEnabled[x, y]) continue;
                 Vector2 c = origin + new Vector2(x + 0.5f, y + 0.5f) * cellSize;
-                if (cow != null && ((Vector2)cow.position - c).sqrMagnitude <= cellSafe * cellSafe) continue;
                 if (cowCollider != null && cowBox.Contains(new Vector3(c.x, c.y, cowBox.center.z))) continue;
                 int px = Mathf.Clamp(Mathf.FloorToInt((c.x - origin.x) * pixelsPerUnit), 0, w - 1);
                 int py = Mathf.Clamp(Mathf.FloorToInt((c.y - origin.y) * pixelsPerUnit), 0, tex.height - 1);
