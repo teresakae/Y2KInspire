@@ -6,7 +6,8 @@ using UnityEngine;
 // ponytail: every pixel (~60k) and cell (~4k) is looped each frame, and the whole texture is
 // re-uploaded when anything changed; fine for one screen. Move regrowth to a shader / render
 // texture (fog amount + last-cleared time in textures) when maps get big.
-// Cloud look: puff textures are stamped at random once in Start into a brightness map, so it costs nothing per frame.
+// Cloud look: puff textures (white-on-transparent or grey-on-black; shape = brightness x alpha) are stamped at random
+// once in Start into a brightness map, so it costs nothing per frame.
 public class FogGrid : MonoBehaviour
 {
     [Tooltip("Clears fog as it moves.")]
@@ -28,7 +29,7 @@ public class FogGrid : MonoBehaviour
     [Tooltip("How fine the blocking is.")]
     [SerializeField] private float cellSize = 0.25f;
     [SerializeField] private Color fogColor = new Color(0.29f, 0.33f, 0.16f);
-    [Tooltip("Grey-on-black cloud images stamped across the fog for its look. Need Read/Write ticked in import settings. Empty = flat colour.")]
+    [Tooltip("White-on-transparent or grey-on-black cloud images (shape = brightness x alpha) stamped across the fog for its look. Need Read/Write ticked in import settings. Empty = flat colour.")]
     [SerializeField] private Texture2D[] puffTextures;
     [Tooltip("How many puffs are stamped.")]
     [SerializeField] private int puffCount = 40;
@@ -161,7 +162,8 @@ public class FogGrid : MonoBehaviour
                     float u = (dx * cos + dy * sin) / size + 0.5f;
                     float v = (-dx * sin + dy * cos) / size + 0.5f;
                     if (u < 0f || u > 1f || v < 0f || v > 1f) continue;
-                    float b = Mathf.Clamp01(t.GetPixelBilinear(u, v).grayscale / bright);
+                    Color px = t.GetPixelBilinear(u, v);
+                    float b = Mathf.Clamp01(px.grayscale * px.a / bright);
                     int i = y * w + x;
                     if (b > look[i]) look[i] = b;
                 }
@@ -176,7 +178,10 @@ public class FogGrid : MonoBehaviour
         float max = 0.01f;
         for (int y = 0; y < 64; y++)
             for (int x = 0; x < 64; x++)
-                max = Mathf.Max(max, t.GetPixelBilinear(x / 63f, y / 63f).grayscale);
+            {
+                Color px = t.GetPixelBilinear(x / 63f, y / 63f);
+                max = Mathf.Max(max, px.grayscale * px.a);
+            }
         return max;
     }
 

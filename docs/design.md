@@ -77,7 +77,7 @@ Both:
 
 ## Systems
 
-- Fog: covers the level. The crow clears it. Fog blocks the cow. See `fog.md`.
+- Fog: covers the level. The crow clears it. Fog blocks the cow. Fog regrowth (cleared fog grows back) is confirmed by the owner; keep it, the current speed is fine. See `fog.md`.
 - Crow energy: drains while flying. At zero the crow is forced to land, and stays down (snake-vulnerable) until it eats fruit.
 - Trees and fruit: fruit hangs in trees. The cow rams a tree, fruit falls, the crow eats it.
 - Moo guidance: the herd moos. FMOD positional audio, so the sound comes from the direction to go.
@@ -124,20 +124,20 @@ Gimersia Inspire 2026 (Indonesia).
 
 | Design item | Status | Notes |
 |---|---|---|
-| Fog clearing and blocking | Partial | Crow clears fog and the cow is blocked. Fog also grows back after 5 s, which the design doesn't say either way. See `fog.md`. |
+| Fog clearing and blocking | Partial | Crow clears fog and the cow is blocked. Fog also grows back, which the owner confirmed is wanted. See `fog.md`. |
 | Two-player movement | Partial | Cow on WASD, crow on arrows, same keyboard. No gamepad. See `players.md`. |
 | Crow energy and forced landing | Partial | Energy drains while moving, bar, slow hop at zero. No landing state. Not wired in the scene yet. See `players.md`. |
 | Crow lands / eats fruit | Partial | Eats by flying over the fruit; "landed" is not a state. Not wired in the scene yet. See `players.md`. |
 | Trees and fruit | Partial | `FruitTree` and `Fruit` scripts exist. Not wired in the scene yet. See `trees.md`. |
 | Cow rams trees | Partial | Charged ram on Space (`CowRam`). Not wired in the scene yet. See `players.md`. |
-| Moo guidance (FMOD) | Not yet | FMOD is installed, no events. |
+| Moo guidance (FMOD) | Placeholder: faint text on a timer (`MooPrompt`). No FMOD. | FMOD is installed, no events. See `level.md`. |
 | Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
-| Win condition | Not yet | |
+| Win condition | Placeholder: exit fades to white and restarts LV_01 (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
 | Start menu | Not yet | |
 | UI feedback | Not yet | |
-| LV_01 | Not yet | Only the prototype scene exists. |
+| LV_01 | Partial — scripts for camera, moo text, exit written; scene not built yet. See `level.md`. | Only the prototype scene exists. |
 | LV_02 | Not yet | |
 | Final art and juice | Not yet | Prototype sprites only. |
 | WebGL build tested | Not yet | |
