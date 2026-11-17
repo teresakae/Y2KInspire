@@ -18,7 +18,11 @@ public class FogGrid : MonoBehaviour
     [SerializeField] private Vector2 areaSize = new Vector2(20, 12);
     [Tooltip("Radius the crow clears around itself.")]
     [SerializeField] private float clearRadius = 0.75f;
-    [Tooltip("Width of the fade at the hole's edge, in units.")]
+    [Tooltip("Shape of the crow's hole (and start clearings), same format as the puffs; Read/Write ticked. Its width = 2 x the radius. Empty = round hole with a noisy edge.")]
+    [SerializeField] private Texture2D clearShape;
+    [Tooltip("With Clear Shape: how much fog is removed (up) from the hole's centre (left, 0) to its edge (right, 1). Up 1 = fully clear, 0 = untouched. A low step near the right leaves thin fog in the outer ring. The cow only walks where this is above 0.5 (Reveal Threshold).")]
+    [SerializeField] private AnimationCurve clearFalloff = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.5f, 1f), new Keyframe(0.7f, 0.6f), new Keyframe(0.85f, 0.3f), new Keyframe(1f, 0f));
+    [Tooltip("Width of the fade at the hole's edge, in units (round hole only).")]
     [SerializeField] private float edgeSoftness = 0.2f;
     [Tooltip("How far the hole's edge wobbles in and out, in units. 0 = perfect circle.")]
     [SerializeField] private float edgeNoise = 0.4f;
@@ -63,11 +67,14 @@ public class FogGrid : MonoBehaviour
     float[] lastCleared;                     // Time.time each pixel was last under the crow
     float[] restFog;                         // fog after the start clearings: regrowth stops here
     bool[,] restEnabled;                     // cells that were blocking after the start clearings
+    float clearShapeMax;                     // brightest spot of clearShape, so a faint image still clears fully
 
     void Start()
     {
         origin = (Vector2)transform.position - areaSize / 2f;
         if (cow != null) cowCollider = cow.GetComponent<Collider2D>();
+        if (clearShape != null && !clearShape.isReadable) { Debug.LogError($"{name}: clear shape {clearShape.name} needs Read/Write ticked"); clearShape = null; }
+        if (clearShape != null) clearShapeMax = Brightest(clearShape);
 
         // Visual: one texture, fully fogged.
         int w = Mathf.CeilToInt(areaSize.x * pixelsPerUnit);
@@ -209,7 +216,8 @@ public class FogGrid : MonoBehaviour
             for (int x = x0; x <= x1; x++)
             {
                 Vector2 p = origin + new Vector2(x + 0.5f, y + 0.5f) / pixelsPerUnit;
-                float t = Mathf.Clamp01((Vector2.Distance(p, center) + Wobble(p) - (radius - soft)) / soft);
+                float t = clearShape != null ? ShapeFog(p, center, radius)
+                        : Mathf.Clamp01((Vector2.Distance(p, center) + Wobble(p) - (radius - soft)) / soft);
                 int i = y * tex.width + x;
                 if (t < fog[i]) { fog[i] = t; dirty = true; }
                 if (t < 1f) lastCleared[i] = Time.time;     // anywhere inside the circle: keep it clear while the crow stays
@@ -227,6 +235,20 @@ public class FogGrid : MonoBehaviour
                 if (cells[x, y].enabled && IsClear(c))
                     cells[x, y].enabled = false;
             }
+    }
+
+    // Fog left at world point p when stamping clearShape at center: 0 where the image is solid, 1 outside it.
+    // clearFalloff thins the clearing toward the radius, so outer rings keep some fog (it must reach 0 at the edge,
+    // because the image's cloud touches its borders and would leave straight edges).
+    // Wobble pushes the rings in and out, so the trail's edge is ragged instead of a smooth brush stroke.
+    float ShapeFog(Vector2 p, Vector2 center, float radius)
+    {
+        Vector2 d = p - center;
+        float dist = d.magnitude;
+        if (dist >= radius) return 1f;
+        Color c = clearShape.GetPixelBilinear(d.x / (2f * radius) + 0.5f, d.y / (2f * radius) + 0.5f);
+        float a = Mathf.Clamp01(c.grayscale * c.a / clearShapeMax) * Mathf.Clamp01(clearFalloff.Evaluate((dist + Wobble(p)) / radius));
+        return 1f - a;
     }
 
     // -edgeNoise..+edgeNoise, smooth and fixed per world spot. Added to a distance, it bends circles into ragged blobs.
