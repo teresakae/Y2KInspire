@@ -1,12 +1,14 @@
 using UnityEngine;
 
-/// <summary>Drops a fruit near the trunk when the cow rams it, and shakes the canopy.</summary>
+/// <summary>Drops a fruit on the ground below the trunk when the cow rams it, and shakes the canopy.</summary>
 public class FruitTree : MonoBehaviour
 {
     [Tooltip("Fruit prefab to drop (PF_Fruit).")]
     [SerializeField] private GameObject fruitPrefab;
-    [Tooltip("Fruit lands at a random spot this far from the tree at most.")]
+    [Tooltip("Fruit lands at a random spot up to this far left or right of the trunk's centre.")]
     [SerializeField] private float dropRadius = 1.2f;
+    [Tooltip("How far below the tree's pivot (trunk centre) the fruit lands. More than half the trunk's height puts it on the ground in front of the trunk, not on the trunk or canopy.")]
+    [SerializeField] private float dropBelow = 2f;
     [Tooltip("Seconds before the next hit counts. Stops one dash dropping many.")]
     [SerializeField] private float cooldown = 0.5f;
     [Tooltip("Fruit sprites hanging on the canopy (children of Canopy). Each ram hides one and drops a real fruit; when all are gone the tree only shakes. Empty = unlimited drops.")]
@@ -37,7 +39,7 @@ public class FruitTree : MonoBehaviour
         shakeTimer = shakeTime;
         if (!TakeHangingFruit()) return;   // empty tree still shakes, drops nothing
         if (fruitPrefab != null)
-            Instantiate(fruitPrefab, (Vector2)transform.position + Random.insideUnitCircle * dropRadius, Quaternion.identity);
+            Instantiate(fruitPrefab, (Vector2)transform.position + new Vector2(Random.Range(-dropRadius, dropRadius), -dropBelow), Quaternion.identity);
     }
 
     // Hides the next hanging fruit. False when none are left.
@@ -60,6 +62,8 @@ public class FruitTree : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        Gizmos.DrawWireSphere(transform.position, dropRadius);
+        // the line where fruit can land
+        Vector3 c = transform.position + Vector3.down * dropBelow;
+        Gizmos.DrawLine(c + Vector3.left * dropRadius, c + Vector3.right * dropRadius);
     }
 }

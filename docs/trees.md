@@ -15,7 +15,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 ## How it works
 
 1. The cow dashes into the tree's collider. `CowRam` checks its charge and calls `FruitTree.Hit()`.
-2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a shake. If `Hanging Fruit` is empty it also spawns `Fruit Prefab` at a random spot within `Drop Radius` of the tree (unlimited drops). If `Hanging Fruit` has entries, each counting ram hides the next active hanging fruit and drops one real `Fruit Prefab` the same way. When all are hidden the tree only shakes and drops nothing. Hanging fruit never regrows.
+2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a shake. If `Hanging Fruit` is empty it also spawns `Fruit Prefab` on the ground: `Drop Below` under the tree's pivot (the trunk centre, so below the trunk's base), at a random sideways spot within `Drop Radius` (unlimited drops). It never lands on the trunk or canopy. If `Hanging Fruit` has entries, each counting ram hides the next active hanging fruit and drops one real `Fruit Prefab` the same way. When all are hidden the tree only shakes and drops nothing. Hanging fruit never regrows.
 3. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
 4. The crow touches the fruit's trigger: `Fruit` calls `CrowEnergy.Eat(Energy)` and destroys itself. The cow's touch is ignored.
 
@@ -42,7 +42,9 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 |---|---|---|---|
 | Fruit prefab | Tree | FruitTree > Fruit Prefab | PF_Fruit |
 | Hanging fruit (drops available) | Tree | FruitTree > Hanging Fruit | HangingFruit1, 2, 3 (3 drops; empty = unlimited) |
-| Drop distance | Tree | FruitTree > Drop Radius | 1.2 (default) |
+| Drop sideways spread | Tree | FruitTree > Drop Radius | 1.2 (default) |
+| Drop distance below trunk centre | Tree | FruitTree > Drop Below | 2 (default; trunk `_4` is about 3.1 tall, so its base is 1.55 below) |
+| Dropped fruit look | PF_Fruit | Sprite Renderer > Sprite | `fruit_cut` (hanging fruit keep `fruit`) |
 | Time between hits | Tree | FruitTree > Cooldown | 0.5 (default) |
 | Canopy to shake | Tree | FruitTree > Shake Target | Canopy |
 | Trunk collider | Tree | BoxCollider2D > Size / Offset | (2.2, 0.6) / (0.03, 0.3) |
