@@ -68,7 +68,7 @@ On the `PlayerControl` component of each object.
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
 | Crow size | Crow | Transform > Scale | 0.5 |
-| Cow collider size | Cow | BoxCollider2D > Size | 2.32 x 2.46 |
+| Cow collider (feet only) | Cow | BoxCollider2D > Size / Offset | 1.6 x 0.8 / (0, -0.8) |
 | Body type, gravity | Cow, Crow | Rigidbody2D > Body Type / Gravity Scale | Dynamic / 0 |
 | Rotation locked | Cow, Crow | Rigidbody2D > Constraints | Freeze Rotation Z |
 | Smoothing | Cow, Crow | Rigidbody2D > Interpolate | Interpolate |
@@ -78,7 +78,7 @@ On the `PlayerControl` component of each object.
 - Diagonal movement is not normalised, so moving diagonally is about 1.41 times faster.
 - Speed is set directly every frame, with no acceleration. Any push from physics (knockback) is overwritten the next frame. The ram gets around this by disabling `PlayerControl` for the charge and dash.
 - Velocity is set in `Update`, not `FixedUpdate`. Interpolate on the Rigidbody2D smooths this.
-- The crow has no collider, so nothing stops it. It flies over fog colliders and the cow. The cow stops at fog because its own BoxCollider2D hits the fog cells (see `fog.md`).
+- The crow has only its trigger collider, so nothing solid stops it. It flies over fog colliders and the cow. The cow stops at fog because its own BoxCollider2D hits the fog cells (see `fog.md`).
 - The flying turn sets `transform.rotation` directly even though Rigidbody2D rotation is frozen. This works now. Watch it if a collider is added to the crow.
 - `Fly` and `Fly Shadow` are both optional and independent. If `Fly` is empty but `Fly Shadow` is set, the shadow still shows while moving but the object doesn't rotate.
 - The sprite for the cow facing and the crow facing are set per-object through the Inspector; no assets are looked up by name.
@@ -92,6 +92,6 @@ On the `PlayerControl` component of each object.
 - Gamepad support (design: keyboard now, gamepads later). The script reads `Keyboard.current` only. Option: use `InputSystem_Actions.inputactions` with one action map per player.
 - True landing state for the crow. "Landed" is just "not moving". No landing key, no vulnerability.
 - The crow still clears fog while tired.
-- Fruit per tree is unlimited.
+- Fruit tree hanging fruit never regrows: after the last one is rammed down the tree drops nothing (see `trees.md`).
 - Juice beyond the charge squash.
 - Restart, win and lose: no link between player state and level flow.

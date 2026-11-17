@@ -9,7 +9,7 @@ A snake sleeps coiled under the fog. It doesn't move until the crow first clears
 - Script: `Assets/Scripts/Snake.cs`, on each snake object.
 - Reads `CrowEnergy.IsGrounded` and `CowRam.IsStrongDash` (see `players.md`) and `FogGrid.IsClear` (see `fog.md`).
 - Art: `Assets/Art/Snake/snake_coiled.png`, `snake_stretched.png` (130 pixels per unit).
-- Scene: `Snake` in SampleScene.
+- Scene: `Snake` in SampleScene. In `Assets/Level1.unity` the `Snake` object is inactive: snakes start in Level2, so Level1 has none.
 
 ## How it works
 
@@ -70,4 +70,4 @@ Kill: `OnTriggerEnter2D` and `OnTriggerStay2D`. If the other object has `CowRam`
 
 - Warning sound (FMOD), vfx, screen shake.
 - Lose screen. The bite reloads the scene directly.
-- LV_02, where snakes first appear.
+- Level2, where snakes first appear.

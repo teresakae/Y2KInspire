@@ -5,8 +5,8 @@ One file per system. Each describes how that system works right now, where it li
 | design.md | What the game is meant to be, and a status table of what exists | Scope, new features, anything that changes how the game plays |
 | fog.md | The fog texture, fog colliders, clearing and regrowth (`FogGrid.cs`) | Fog, the Fog Grid object, the start clearing, anything that blocks the cow |
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy |
-| trees.md | Fruit trees and fruit (`FruitTree.cs`, `Fruit.cs`) | Trees, fruit, anything the cow rams for food |
-| level.md | LV_01 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`) | Level layout, camera, level start or end, layers and collision matrix |
+| trees.md | Fruit trees and fruit, and wall trees with random looks (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
+| level.md | Level1 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`) | Level layout, camera, level start or end, layers and collision matrix |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
 
 ## Run it
@@ -21,13 +21,13 @@ One file per system. Each describes how that system works right now, where it li
 | Scene | Purpose | In build? |
 |---|---|---|
 | `Assets/Scenes/SampleScene.unity` | Prototype. The only scene. | Yes, it is the only entry in `ProjectSettings/EditorBuildSettings.asset` (enabled). Check `File > Build Profiles` if this changes. |
-| `Assets/Scenes/LV_01.unity` | First level, copy of SampleScene. See level.md. | Not created yet |
+| `Assets/Level1.unity` | First level, copy of SampleScene. See level.md. | Yes (being set up) |
 
 Root objects in SampleScene:
 
 | Object | Holds | Doc |
 |---|---|---|
-| Main Camera | Orthographic camera (size 5), AudioListener, URP 2D camera data. `SharedCamera` (planned, LV_01) | design.md, level.md |
+| Main Camera | Orthographic camera (size 6), AudioListener, URP 2D camera data. `SharedCamera` (Level1) | design.md, level.md |
 | Global Light 2D | The 2D light for the scene | design.md |
 | Fog Grid | `FogGrid` script. Builds the fog sprite and collider children at Start | fog.md |
 | Clearing | Empty marker. Its position and X scale set the start clearing | fog.md |

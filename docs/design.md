@@ -27,15 +27,18 @@ Draw order (`SpriteRenderer > Order in Layer`, all on the Default sorting layer)
 
 | Order | What |
 |---|---|
+| 30 | Crow energy bar (world-space `Canvas > Sort Order`) |
 | 20 | Snake's "!" eaten mark |
+| 16 | Crow |
+| 15 | Cow |
+| 14 | Cow and crow shadows (`Shadow`, `FlyShadow`) |
+| 13 | Fruit: hanging fruit on the fruit tree, and dropped fruit (`PF_Fruit`) |
+| 12 | Tree canopies (wall trees and fruit tree) |
+| 11 | Tree trunks (wall trees and fruit tree) |
 | 10 | Fog (`Fog Grid > Sorting Order`) |
-| 4 | Crow |
-| 3 | Cow (draws over the canopy) |
-| 2 | Fruit (`PF_Fruit`) |
-| 1 | Tree canopy |
-| 0 | Tree trunk |
-| -1 | Shadows |
 | -5 | Snake (anything below 10 hides under fog) |
+
+Trees, fruit and characters draw above the fog. Characters draw above every tree, so nothing can hide behind a tree (top-down view).
 
 Palette (approximate, from the artist's sheet):
 
@@ -90,8 +93,8 @@ Both:
 
 Vertical slice:
 - Start menu.
-- LV_01: teaches the loop (fog, energy, ram tree, fruit, moo).
-- LV_02: adds snakes.
+- Level1: teaches the loop (fog, energy, ram tree, fruit, moo).
+- Level2: adds snakes.
 
 One scene per level. Snakes are the cut line if time runs short.
 
@@ -104,7 +107,7 @@ Jam minimum: clear win and lose, a defined obstacle, a repeating core loop, basi
 
 Scoring weights at playtest curation: game design 40, visual 35, audio 15, implementation 10.
 
-Builds: WebGL (main, for itch.io) and Windows (backup for the finals booth). Risks: FMOD on WebGL needs extra setup. FogGrid loops about 60k pixels and 4k cells every frame on the CPU and may be slow in WebGL.
+Builds: WebGL (main, for itch.io) and Windows (backup for the finals booth). Risks: FMOD on WebGL needs extra setup. FogGrid loops about 168k pixels and 10.5k cells every frame in Level1 on the CPU and may be slow in WebGL.
 
 ## Jam deliverables
 
@@ -133,12 +136,12 @@ Gimersia Inspire 2026 (Indonesia).
 | Moo guidance (FMOD) | Placeholder: faint text on a timer (`MooPrompt`). No FMOD. | FMOD is installed, no events. See `level.md`. |
 | Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
-| Win condition | Placeholder: exit fades to white and restarts LV_01 (`LevelExit`). | See `level.md`. |
+| Win condition | Placeholder: exit fades to white and restarts Level1 (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
 | Start menu | Not yet | |
 | UI feedback | Not yet | |
-| LV_01 | Partial — scripts for camera, moo text, exit written; scene not built yet. See `level.md`. | Only the prototype scene exists. |
-| LV_02 | Not yet | |
+| Level1 | Partial — scene built (camera, fog, clearings, tree walls, fruit tree, exit, HUD). See `level.md`. | Moo text not placed; crow still flies through tree walls. |
+| Level2 | Not yet | |
 | Final art and juice | Not yet | Prototype sprites only. |
 | WebGL build tested | Not yet | |
 | Windows build | Not yet | |

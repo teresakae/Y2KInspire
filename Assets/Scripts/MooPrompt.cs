@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Placeholder for the herd's moo until FMOD audio exists: a faint text that fades in, holds, fades out, on repeat.
 /// </summary>
-// ponytail: fixed screen corner, not the real herd direction. When the herd's position matters (LV_02)
+// ponytail: fixed screen corner, not the real herd direction. When the herd's position matters (Level2)
 // or FMOD arrives, place by direction to a herd Transform / play the FMOD event here.
 public class MooPrompt : MonoBehaviour
 {
