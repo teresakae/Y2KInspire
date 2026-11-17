@@ -2,7 +2,7 @@
 
 ## 1. The game
 
-Cowsncrows is a local two-player co-op game on one shared screen. The cow is a calf lost from its herd in a foggy forest. It walks and rams things but cannot enter fog. The crow flies, clears fog, and eats fruit to keep its energy up. Moos from the herd guide the players home. Tone: "Warm, chunky sticker critters in a hushed, foggy forest. Cozy with a quiet unease; not horror, not sugary-cute." Made for Gimersia Inspire 2026 (checkpoint page Thu 19 Nov 2026, submission Sun 29 Nov 2026 23:59 WIB). Scenes: a start menu, LV_01, LV_02. Full design: `docs/design.md`.
+Cowsncrows is a local two-player co-op game on one shared screen. The cow is a calf lost from its herd in a foggy forest. It walks and rams things but cannot enter fog. The crow flies, clears fog, and eats fruit to keep its energy up. Moos from the herd guide the players home. Tone: "Warm, chunky sticker critters in a hushed, foggy forest. Cozy with a quiet unease; not horror, not sugary-cute." Made for Gimersia Inspire 2026 (checkpoint page Thu 19 Nov 2026, submission Sun 29 Nov 2026 23:59 WIB). Scenes: a start menu, Level1, Level2. Full design: `docs/design.md`.
 
 Who does what: the owner does all code and all Unity editor work. The artist delivers art only and never touches the repo; art reaches Unity through the owner.
 
@@ -68,19 +68,18 @@ Unity 6 / Input System 1.20 API (use these, not the old names):
 
 ## 7. Editor bridge
 
-unity-mcp (Unity's relay). Command, stdio:
+MCP for Unity (CoplayDev package `com.coplaydev.unity-mcp`, v10.3.0), HTTP at `http://127.0.0.1:8080/mcp`, server name `UnityMCP` in Claude Code.
 
-```
-/Users/kaes/.unity/relay/relay_mac_arm64.app/Contents/MacOS/relay_mac_arm64 --mcp --project-path /Users/kaes/Documents/Personal/Unity/cowncrow
-```
+To connect: in Unity, `Window > MCP for Unity > Connect`, Transport `HTTP Local`, click Start Server (status "Session Active (cowncrow)"). Then in Claude Code, `/mcp` > UnityMCP > Reconnect. Claude can't reconnect it itself.
 
-Currently configured only for another project (Project29). It must be added for this project before the bridge works here.
-
-Tools: (fill in from the tool list on first connect)
+Tools used so far: `execute_code` (C# in the editor, good for batch scene edits with Undo), `manage_scene` (save, hierarchy, scene_view_frame), `manage_editor` (play/stop), `manage_camera` (screenshot), `read_console`, `find_gameobjects`, `manage_gameobject`, `manage_prefabs`. Full list: ToolSearch "UnityMCP".
 
 FMOD MCP: not set up yet.
 
-Gotchas: (empty). Add a line every time a call fails for a non-obvious reason.
+Gotchas (add a line every time a call fails for a non-obvious reason):
+- The server is only up after Start Server in the Unity window; `ECONNREFUSED` on 127.0.0.1:8080 means it isn't running.
+- `execute_code` compiles with CodeDom (C# 6): no local functions, no `is X x` patterns. Use lambdas (`System.Func`) instead.
+- `manage_camera` screenshot `output_folder` must be inside the project: use `Library/Captures` (not imported, not in git).
 
 ## 8. Project map
 
@@ -105,7 +104,7 @@ New assets go in the folder for their type. Level scenes go in `Assets/Scenes`.
 
 Placeholder policy: if the art isn't here yet, use engine primitives or flat sprites in palette colours. Never fake drawings.
 
-Naming: PascalCase for assets and scripts. Prefixes: `M_` material, `T_` texture, `SPR_` sprite, `PF_` prefab, `SO_` ScriptableObject, `SFX` / `MUS` for FMOD events, `LV_` level scenes (e.g. `LV_01`).
+Naming: PascalCase for assets and scripts. Prefixes: `M_` material, `T_` texture, `SPR_` sprite, `PF_` prefab, `SO_` ScriptableObject, `SFX` / `MUS` for FMOD events, level scenes are `Level` + number, no prefix (e.g. `Level1`).
 
 Palette (approximate, from the artist's sheet):
 
