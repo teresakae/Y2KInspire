@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>Moves one animal from the keyboard and swaps its sprite; the crow also flies, turns and shows a shadow.</summary>
+/// <summary>Moves one animal from the keyboard and swaps its sprite; the crow also flies, snaps to face its direction and shows a shadow.</summary>
 public class PlayerControl : MonoBehaviour
 {
     public enum Controls { WASD, Arrows }
@@ -28,8 +28,6 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private float walkFps = 8f;
     [Tooltip("Rotation offset so the fly sprite's head points along travel. fly.png has its head at the bottom, so 90.")]
     [SerializeField] private float flyAngle = 90f;
-    [Tooltip("Degrees per second the sprite turns toward travel.")]
-    [SerializeField] private float turnRate = 900f;
     [Tooltip("Tired (speedScale below 1): sway side to side this many degrees instead of flying.")]
     [SerializeField] private float waddleAngle = 8f;
     [Tooltip("Waddle sway speed (radians per second).")]
@@ -80,11 +78,11 @@ public class PlayerControl : MonoBehaviour
         else sr.sprite = lastFacing;
         if (flyShadow != null) flyShadow.SetActive(moving && !tired);
 
-        // Flying: turn toward travel. Tired and moving: waddle. Stopped: back upright.
-        var turn = flying ? Quaternion.Euler(0, 0, Mathf.Atan2(y, x) * Mathf.Rad2Deg + flyAngle)
-                 : tired && moving ? Quaternion.Euler(0, 0, Mathf.Sin(Time.time * waddleSpeed) * waddleAngle)
-                 : Quaternion.identity;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, turn, turnRate * Time.deltaTime);
+        // Flying: snap to right/left/up/down (left/right wins on diagonals, like the facing sprite). Tired and moving: waddle. Stopped: upright.
+        float heading = x > 0 ? 0f : x < 0 ? 180f : y > 0 ? 90f : -90f;
+        transform.rotation = flying ? Quaternion.Euler(0, 0, heading + flyAngle)
+                           : tired && moving ? Quaternion.Euler(0, 0, Mathf.Sin(Time.time * waddleSpeed) * waddleAngle)
+                           : Quaternion.identity;
 
         // The shadow is a child, so undo the spin: keep it flat at its original offset.
         if (flyShadow != null)

@@ -2,7 +2,7 @@
 
 ## What it is
 
-Two animals on one keyboard. The cow (WASD) walks. The crow (arrow keys) flies faster. Both face the way they move. While the crow moves it switches to a wings-out sprite, turns toward its direction of travel, and shows a shadow on the ground below it. Standing still, each goes back to its last facing sprite. The cow can charge and dash (Space) to ram trees; the crow has an energy bar that drains while it moves.
+Two animals on one keyboard. The cow (WASD) walks. The crow (arrow keys) flies faster. Both face the way they move. While the crow moves it switches to a wings-out sprite, snaps to face right, left, up or down (no smooth turn), and shows a shadow on the ground below it. Standing still, each goes back to its last facing sprite. The cow can charge and dash (Space) to ram trees; the crow has an energy bar that drains while it moves.
 
 ## Where it lives
 
@@ -19,7 +19,7 @@ Everything happens in `Update`, in this order:
 2. `moving` = any key held. While moving, `lastDir` (public, hidden) = `(x, y)`. `CowRam` aims with it.
 3. Pick the facing sprite: right if x > 0, left if x < 0, otherwise back if y > 0, front if y < 0. Left/right wins on diagonals. If nothing is pressed, keep the last facing.
 4. Pick the shown sprite. Flying (moving and `Fly` is set): `Fly`. Otherwise, moving right with `Walk Right` frames: cycle them, frame = `(int)(Time.time * Walk Fps) % length`. Same for left with `Walk Left`. With no left/right input: up uses `Walk Up`, down uses `Walk Down`. Otherwise the last facing sprite. Standing still always shows the facing sprite. Show `Fly Shadow` only while moving (if set).
-5. If flying, the object rotates toward its direction of travel at up to `Turn Rate` degrees per second, plus `Fly Angle` as an offset: `fly.png` has its head at the bottom, so 90. Otherwise it rotates back to upright at the same rate.
+5. If flying, the object snaps (no smooth turn) to one of four headings: right 0°, left 180°, up 90°, down -90°, picked like the facing sprite (left/right wins on diagonals), plus `Fly Angle` as an offset: `fly.png` has its head at the bottom, so 90. Tired and moving: it sways by `Waddle Angle` at `Waddle Speed`. Otherwise it is upright.
 6. If `Fly Shadow` is set, keep it unrotated and at its starting offset from the object, so it stays flat while the crow spins.
 7. Set the Rigidbody2D's `linearVelocity` to `(x, y) * Mov Speed * speedScale`. `speedScale` (public, hidden, default 1) is set by `CrowEnergy`.
 
@@ -65,7 +65,6 @@ On the `PlayerControl` component of each object.
 | Walk frames | Crow | PlayerControl > Walk Left / Walk Right / Walk Up / Walk Down | not set up yet (empty) |
 | Walk speed (frames/s) | Cow, Crow | PlayerControl > Walk Fps | 8 (default, not set up yet) |
 | Fly sprite rotation offset | Crow | PlayerControl > Fly Angle | 90 (default, check in scene) |
-| Turn rate (deg/s) | Cow, Crow | PlayerControl > Turn Rate | 900 (default, check in scene) |
 | Ram key | Cow | CowRam > Ram Key | not set up yet (default Space) |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
@@ -81,7 +80,7 @@ On the `PlayerControl` component of each object.
 - Speed is set directly every frame, with no acceleration. Any push from physics (knockback) is overwritten the next frame. The ram gets around this by disabling `PlayerControl` for the charge and dash.
 - Velocity is set in `Update`, not `FixedUpdate`. Interpolate on the Rigidbody2D smooths this.
 - The crow has only its trigger collider, so nothing solid stops it. It flies over fog colliders and the cow. The cow stops at fog because its own BoxCollider2D hits the fog cells (see `fog.md`).
-- The flying turn sets `transform.rotation` directly even though Rigidbody2D rotation is frozen. This works now. Watch it if a collider is added to the crow.
+- The flying snap sets `transform.rotation` directly even though Rigidbody2D rotation is frozen. This works now. Watch it if a collider is added to the crow.
 - `Fly` and `Fly Shadow` are both optional and independent. If `Fly` is empty but `Fly Shadow` is set, the shadow still shows while moving but the object doesn't rotate.
 - The sprite for the cow facing and the crow facing are set per-object through the Inspector; no assets are looked up by name.
 - `PlayerControl` is disabled during the cow's charge and dash, so WASD does nothing then, and the walk sprites stop updating.

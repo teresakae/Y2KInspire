@@ -10,7 +10,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 - Scripts: `Assets/Scripts/FruitTree.cs` (on each tree), `Assets/Scripts/Fruit.cs` (on the fruit prefab). The ram itself is `CowRam.cs`, see `players.md`.
 - Prefab: `Assets/Prefabs/PF_Fruit`.
-- Scene: `Tree` in `Assets/Level1.unity`, at (21.6, -1.2), in clearing 2. Trunk sprite `cow and crow trees_4` (order 11); child `Canopy`, sprite `cow and crow trees_1` (order 12), local position (0.06, 2.6) so it sits on the trunk; the canopy has three children `HangingFruit1` to `HangingFruit3` (sprite `fruit`, order 13). They shake with the canopy.
+- Scene: `Tree` in `Assets/Level1.unity`, at (21.6, -1.2), in clearing 2. Trunk sprite `cow and crow trees_4` (order 11); child `Canopy`, sprite `cow and crow trees_1` (order 17), local position (0.06, 2.6) so it sits on the trunk; the canopy has three children `HangingFruit1` to `HangingFruit3` (sprite `fruit`, order 18). They shake with the canopy.
 
 ## How it works
 
@@ -23,10 +23,10 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 1. Create an empty object `Tree` in the scene.
 2. Add the trunk as a SpriteRenderer on `Tree`. Add a Box Collider 2D covering the trunk base only, so the cow can walk behind the canopy.
-3. Add a child `Canopy` with the canopy sprite (order 12, above the trunk's 11). No collider.
+3. Add a child `Canopy` with the canopy sprite (order 17, above the trunk's 11 and the animals). No collider.
 4. Add `FruitTree` to `Tree`. Set `Fruit Tree > Fruit Prefab` to `Assets/Prefabs/PF_Fruit`.
 5. Drag `Canopy` into `Fruit Tree > Shake Target`.
-   Optional: add sprite children on `Canopy` (order 13) and drag them into `Fruit Tree > Hanging Fruit` to limit the drops to that many.
+   Optional: add sprite children on `Canopy` (order 18) and drag them into `Fruit Tree > Hanging Fruit` to limit the drops to that many.
 6. Select the tree to see the drop radius as a wire circle in the Scene view.
 
 ## Making the fruit prefab
@@ -58,6 +58,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 - The tree's collider must be on the same object as `FruitTree` (the root), because `CowRam` looks for the component on the thing it hit.
 - Put the collider on the trunk base only. A canopy collider would stop the cow far from the trunk.
 - The crow needs a trigger Circle Collider 2D, or fruit never gets eaten.
+- Canopies (17) draw above the animals (15, 16), so the crow is hidden when it flies over a canopy. Hanging fruit must stay above the canopy (18).
 - If `Fruit Prefab` is empty, the tree logs an error and drops nothing, but still shakes.
 
 ## Not built yet
@@ -96,14 +97,14 @@ Wall trees are the forest edge: decoration that is also a wall. They block the c
 
 1. Set the sheet's `Pixels Per Unit` to 130 and check the 6 slices in the Sprite Editor.
 2. Create an empty `WallTree`. Add a Circle Collider 2D: radius about the canopy's half-width, `Offset` Y raised to cover the trunk and lower canopy.
-3. Add child `Trunk` (SpriteRenderer, `Order in Layer` 11) and child `Canopy` (SpriteRenderer, `Order in Layer` 12). Both are above the fog (10), so walls read as trees in the mist. Use lower numbers than 10 to hide them in fog.
+3. Add child `Trunk` (SpriteRenderer, `Order in Layer` 11) and child `Canopy` (SpriteRenderer, `Order in Layer` 17). Both are above the fog (10), so walls read as trees in the mist. Use lower numbers than 10 to hide them in fog.
 4. Add `TreeLook` to the root. Drag `Trunk` and `Canopy` into its fields. Fill `Trunks` with `_2`, `_3`, `_4` and `Canopies` with `_0`, `_1`, `_5`.
 5. Look at `Canopy > Transform > Position Y` and set `Canopy Height` to a range around it.
 6. Drag the object into `Assets/Prefabs` to make the prefab.
 
 ## Fruit tree with sheet art
 
-The fruit tree `Tree` uses the same sheet: trunk `_4` (order 11), `Canopy` `_1` (order 12, local position (0.06, 2.6)), and three `fruit` sprite children on `Canopy` (order 13) that shake with it. The hanging fruit is real: it limits the drops, see "How it works".
+The fruit tree `Tree` uses the same sheet: trunk `_4` (order 11), `Canopy` `_1` (order 17, local position (0.06, 2.6)), and three `fruit` sprite children on `Canopy` (order 18) that shake with it. The hanging fruit is real: it limits the drops, see "How it works".
 
 ## Tuning
 
@@ -115,7 +116,7 @@ The fruit tree `Tree` uses the same sheet: trunk `_4` (order 11), `Canopy` `_1` 
 | Canopy height | WallTree prefab root | TreeLook > Canopy Height | 2 to 3.2 (lower lets the canopy hide its trunk) |
 | Mirror at random | WallTree prefab root | TreeLook > Random Flip | on |
 | Wall shape | WallTree prefab root | CircleCollider2D > Radius / Offset | 2.7 / (0, 2.6) |
-| Draw order | Trunk / Canopy | SpriteRenderer > Order in Layer | 11 / 12 (characters are 15 and 16, above both) |
+| Draw order | Trunk / Canopy | SpriteRenderer > Order in Layer | 11 / 17 (characters 15 and 16 sit between: in front of trunks, behind canopies) |
 
 ## Gotchas
 

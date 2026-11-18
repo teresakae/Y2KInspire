@@ -29,16 +29,17 @@ Draw order (`SpriteRenderer > Order in Layer`, all on the Default sorting layer)
 |---|---|
 | 30 | Crow energy bar (world-space `Canvas > Sort Order`) |
 | 20 | Snake's "!" eaten mark |
+| 18 | Hanging fruit on the fruit tree (above its canopy) |
+| 17 | Tree canopies (wall trees and fruit tree) |
 | 16 | Crow |
 | 15 | Cow |
 | 14 | Cow and crow shadows (`Shadow`, `FlyShadow`) |
-| 13 | Fruit: hanging fruit on the fruit tree, and dropped fruit (`PF_Fruit`) |
-| 12 | Tree canopies (wall trees and fruit tree) |
+| 13 | Dropped fruit (`PF_Fruit`) |
 | 11 | Tree trunks (wall trees and fruit tree) |
 | 10 | Fog (`Fog Grid > Sorting Order`) |
 | -5 | Snake (anything below 10 hides under fog) |
 
-Trees, fruit and characters draw above the fog. Characters draw above every tree, so nothing can hide behind a tree (top-down view).
+Trees, fruit and characters draw above the fog. Characters draw above trunks but below canopies, so the crow is hidden when it flies over a canopy.
 
 Palette (approximate, from the artist's sheet):
 
