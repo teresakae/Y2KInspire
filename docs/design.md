@@ -143,5 +143,5 @@ Gimersia Inspire 2026 (Indonesia).
 | Level1 | Partial — scene built (camera, fog, clearings, tree walls, fruit tree, exit, HUD). See `level.md`. | Moo text not placed; crow still flies through tree walls. |
 | Level2 | Not yet | |
 | Final art and juice | Not yet | Prototype sprites only. |
-| WebGL build tested | Not yet | |
+| WebGL build tested | Partial | Built and uploaded to itch.io 18 Nov 2026. Loads in the browser and takes keyboard input; full level not played through there yet. See `README.md` Build (WebGL). |
 | Windows build | Not yet | |

@@ -87,7 +87,8 @@ Versions: Unity 6000.6.3f1; URP 17.6.0 (2D Renderer); Input System 1.20.0; uGUI 
 
 ```
 Assets/
-  Scenes/      SampleScene.unity = only scene, the prototype
+  Level1.unity at the Assets root for now; the only scene in the build
+  Scenes/      SampleScene.unity = the prototype, not in build
   Scripts/     FogGrid.cs, PlayerControl.cs
   Sprites/     Cow/ and Crow/ (4-direction pngs; crow also fly.png)
   Settings/    URP assets, InputSystem_Actions.inputactions, scene templates
@@ -98,6 +99,7 @@ Assets/
   Audio/       create when first needed: FMOD banks
   Sandbox/     create when first needed: experiments, nothing references it
 docs/          one doc per system, see docs/README.md
+CowAndCrow/    WebGL build output, gitignored
 ```
 
 New assets go in the folder for their type. Level scenes go in `Assets/Scenes`.

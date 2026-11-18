@@ -12,7 +12,7 @@ One file per system. Each describes how that system works right now, where it li
 ## Run it
 
 1. Unity 6000.6.3f1.
-2. Open `Assets/Scenes/SampleScene.unity`.
+2. Open `Assets/Level1.unity`.
 3. Press Play, then click the Game view so it gets keyboard focus.
 4. WASD moves the cow. Arrow keys move the crow.
 
@@ -20,8 +20,8 @@ One file per system. Each describes how that system works right now, where it li
 
 | Scene | Purpose | In build? |
 |---|---|---|
-| `Assets/Scenes/SampleScene.unity` | Prototype. The only scene. | Yes, it is the only entry in `ProjectSettings/EditorBuildSettings.asset` (enabled). Check `File > Build Profiles` if this changes. |
-| `Assets/Level1.unity` | First level, copy of SampleScene. See level.md. | Yes (being set up) |
+| `Assets/Scenes/SampleScene.unity` | Prototype. | No. Listed in `File > Build Profiles > Scene List` but unticked. |
+| `Assets/Level1.unity` | First level, copy of SampleScene. See level.md. | Yes. Index 0, the only scene in the build (`ProjectSettings/EditorBuildSettings.asset`). |
 
 Root objects in SampleScene:
 
@@ -35,6 +35,21 @@ Root objects in SampleScene:
 | Crow | `PlayerControl` (arrows), Rigidbody2D, sprite, Shadow and FlyShadow children | players.md |
 
 New objects go in the matching group above, and the doc for that group gets a line.
+
+## Build (WebGL)
+
+Active build profile: `Assets/Settings/Build Profiles/Web.asset`. Product Name "Cow and Crow", Company Name "Y2K", Version 1.0.
+
+1. `File > Build Profiles > Web`, click Build, pick the `CowAndCrow/` folder at the project root. It is gitignored (`/CowAndCrow/`). Output: `index.html`, `Build/` (`CowAndCrow.wasm`, `.data`, `.framework.js`, `.loader.js`), `TemplateData/`.
+2. Zip the contents of `CowAndCrow/`, not the folder itself: `index.html` must sit at the zip root. About 18 MB.
+3. Upload to https://kkaechi.itch.io/cow-and-crow as an HTML project, tick "This file will be played in the browser". Jam: https://itch.io/jam/gimersia-inspire-2026.
+
+Gotchas:
+
+* The Web profile has its own Player Settings. While it is active, `Edit > Project Settings > Player` is ignored (yellow warning on that page). The "Player Settings" tab button at the top right of the Build Profiles window opens the global page, not the profile's copy. To edit the profile's copy, expand the "Player Settings" foldout in the middle of `File > Build Profiles > Web`.
+* `Player Settings > Web > Publishing Settings > Compression Format` is Disabled (profile and global), because itch.io serves Brotli/Gzip builds badly without extra setup. In the YAML, `webGLCompressionFormat: 0` is Brotli and `2` is Disabled.
+* FMOD is installed but unused (no banks, no components), and did not block the build.
+* Checked 18 Nov 2026 on itch.io: the build loads, fog renders, and WASD and arrow keys reach the game after clicking it. Full level not played through in the browser yet.
 
 ## Writing docs
 
