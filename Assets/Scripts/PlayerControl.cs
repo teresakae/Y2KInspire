@@ -20,6 +20,10 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private Sprite[] walkLeft;
     [Tooltip("Walk frames while moving right (optional). Empty = plain facing sprite.")]
     [SerializeField] private Sprite[] walkRight;
+    [Tooltip("Walk frames while moving up (optional). Empty = plain facing sprite.")]
+    [SerializeField] private Sprite[] walkUp;
+    [Tooltip("Walk frames while moving down (optional). Empty = plain facing sprite.")]
+    [SerializeField] private Sprite[] walkDown;
     [Tooltip("Walk frames per second.")]
     [SerializeField] private float walkFps = 8f;
     [Tooltip("Rotation offset so the fly sprite's head points along travel. fly.png has its head at the bottom, so 90.")]
@@ -70,7 +74,7 @@ public class PlayerControl : MonoBehaviour
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
         bool tired = speedScale < 1f;
         bool flying = moving && fly != null && !tired;
-        Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : null;
+        Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : y > 0 ? walkUp : y < 0 ? walkDown : null;
         if (flying) sr.sprite = fly;
         else if (walk != null && walk.Length > 0) sr.sprite = walk[(int)(Time.time * walkFps) % walk.Length];
         else sr.sprite = lastFacing;
