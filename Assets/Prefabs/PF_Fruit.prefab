@@ -107,6 +107,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fruit
   energy: 30
+  gravity: 30
+  fallingOrder: 20
+  bounce: 0.15
+  landedSprite: {fileID: 21300000, guid: c3c0e4d4658a2418ab825f3524208945, type: 3}
 --- !u!58 &5799754628059191965
 CircleCollider2D:
   m_ObjectHideFlags: 0

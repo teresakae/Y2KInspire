@@ -2,10 +2,12 @@ using UnityEngine;
 
 // Fog = one texture the crow paints round holes into, plus a grid of invisible colliders
 // that block the cow until the crow clears them.
-// Fog the crow cleared grows back after regrowDelay, except start clearings and where the cow stands.
+// Fog the crow cleared grows back after regrowDelay (plus a patchy extra wait and a patchy speed, so it creeps back in blotches),
+// except start clearings and where the cow stands.
 // ponytail: every pixel (~60k) and cell (~4k) is looped each frame, and the whole texture is
 // re-uploaded when anything changed; fine for one screen. Move regrowth to a shader / render
 // texture (fog amount + last-cleared time in textures) when maps get big.
+// Optional Fog Material (e.g. M_FogSwirl) animates the look in a shader; gameplay never reads it.
 // Cloud look: puff textures (white-on-transparent or grey-on-black; shape = brightness x alpha) are stamped at random
 // once in Start into a brightness map, so it costs nothing per frame.
 public class FogGrid : MonoBehaviour
@@ -42,17 +44,47 @@ public class FogGrid : MonoBehaviour
     [Tooltip("Brightness of the thinnest fog, relative to Fog Color. Lower = stronger cloud shapes. Fog stays opaque either way.")]
     [Range(0f, 1f)]
     [SerializeField] private float thinShade = 0.7f;
+    [Tooltip("See-through-ness of the thinnest fog, relative to Fog Color's alpha. 1 = even thickness everywhere; lower = gaps between puffs show the ground faintly. Looks only: the cow is still blocked there.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float thinAlpha = 1f;
+    [Tooltip("Softens the cloud shapes, in units. Higher = puffs melt into each other with no visible puff edges. 0 = sharp.")]
+    [SerializeField] private float lookBlur = 0f;
+    [Tooltip("Fog within this many units of an open-at-start spot's edge stays at full thickness, so the starting clearing's border reads clearly. 0 = off.")]
+    [SerializeField] private float thickBorder = 0f;
     [Tooltip("Change for a different random puff layout.")]
     [SerializeField] private int seed = 0;
     [Tooltip("Things below this order hide under the fog (snakes).")]
     [SerializeField] private int sortingOrder = 10;
+    [Tooltip("Optional material for the fog (e.g. M_FogSwirl for drifting, wispy fog). Empty = plain sprite look.")]
+    [SerializeField] private Material fogMaterial;
     [Tooltip("Fog never regrows under the cow.")]
     [SerializeField] private Transform cow;
+    [Tooltip("Cow haze (needs the fog shader): fog gets thinner in a soft oval around the cow's body so its head shows through when it stands at the fog's edge. Looks only. Oval centre above the cow's feet, in units.")]
+    [SerializeField] private float cowHazeHeight = 1.2f;
+    [Tooltip("Half width and half height of the haze oval, in units.")]
+    [SerializeField] private Vector2 cowHazeRadius = new Vector2(1.1f, 1.3f);
+    [Tooltip("How much of the oval's radius is the soft fade at its rim. 1 = fades from the centre, 0 = hard rim.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float cowHazeSoftness = 0.6f;
+    [Tooltip("Fog left at the oval's centre. 1 = no haze (off), 0 = fully clear, 0.35 = head lightly hazy.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float cowHazeAmount = 0.35f;
+    [Tooltip("Direction and strength of the fog wind, in units per second. The fog shader drift and the swaying grass both follow it. (0, 0) = no wind: grass still sways gently, fog drifts only by its own material scroll.")]
+    [SerializeField] private Vector2 wind = new Vector2(0.1f, 0.02f);
     [Tooltip("Seconds after the crow last cleared a spot before it starts regrowing.")]
     [SerializeField] private float regrowDelay = 5f;
     [Tooltip("Fraction of full fog regrown per second.")]
     [SerializeField] private float regrowSpeed = 0.5f;
+    [Tooltip("Extra wait, up to this many seconds, that varies in soft patches. Fog creeps back in blotches instead of the whole trail fading at once. 0 = all at once.")]
+    [SerializeField] private float regrowJitter = 3f;
+    [Tooltip("Size of the regrow patches. Lower = bigger blotches.")]
+    [SerializeField] private float regrowNoiseScale = 0.8f;
+    [Tooltip("How much regrow speed varies from patch to patch. 0 = every patch refills at the same speed. 1 = the fastest patches refill about 3 times faster than the slowest.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float regrowSpeedJitter = 0.5f;
     [SerializeField] private float cowSafeRadius = 0.75f;
+    [Tooltip("Width, in units, of the soft ring just outside Cow Safe Radius where fog only regrows part of the way. Stops a hard line where the safe bubble ends. 0 = hard edge.")]
+    [SerializeField] private float cowSafeFade = 1f;
     [Tooltip("A spot counts as revealed when its fog is below this (0 = clear, 1 = full fog).")]
     [Range(0f, 1f)]
     [SerializeField] private float revealThreshold = 0.5f;
@@ -68,6 +100,9 @@ public class FogGrid : MonoBehaviour
     float[] restFog;                         // fog after the start clearings: regrowth stops here
     bool[,] restEnabled;                     // cells that were blocking after the start clearings
     float clearShapeMax;                     // brightest spot of clearShape, so a faint image still clears fully
+    float[] maxAlpha;                        // full-fog alpha per pixel (thin puff gaps are lower)
+    float[] waitTime;                        // regrowDelay + this pixel's patchy extra wait
+    float[] speedMul;                        // this pixel's regrow speed multiplier (around 1)
 
     void Start()
     {
@@ -82,11 +117,29 @@ public class FogGrid : MonoBehaviour
         tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
         pixels = new Color32[w * h];
         float[] look = BuildLook(w, h);
+        maxAlpha = new float[pixels.Length];
+        waitTime = new float[pixels.Length];
+        speedMul = new float[pixels.Length];
         for (int i = 0; i < pixels.Length; i++)
         {
             Color c = fogColor * Mathf.Lerp(thinShade, 1f, look[i]);
             c.a = fogColor.a;
             pixels[i] = c;
+            maxAlpha[i] = fogColor.a * Mathf.Lerp(thinAlpha, 1f, look[i]) * 255f;
+            Vector2 p = new Vector2(i % w, i / w) / pixelsPerUnit;
+            if (thickBorder > 0f && openAtStart != null)
+            {
+                // Distance outside the nearest start clearing's circle: thin fog there reads like a path, so keep it full.
+                Vector2 world = origin + p + Vector2.one * (0.5f / pixelsPerUnit);
+                float outside = 1000f;
+                foreach (var s in openAtStart)
+                    if (s != null) outside = Mathf.Min(outside, Vector2.Distance(world, s.position) - s.lossyScale.x / 2f);
+                float k = Mathf.SmoothStep(0f, 1f, Mathf.Max(0f, outside) / thickBorder);
+                maxAlpha[i] = Mathf.Lerp(fogColor.a * 255f, maxAlpha[i], k);
+            }
+            waitTime[i] = regrowDelay + Mathf.PerlinNoise(p.x * regrowNoiseScale + 50f, p.y * regrowNoiseScale + 50f) * regrowJitter;   // +50: Perlin repeats near 0
+            float speedNoise = Mathf.PerlinNoise(p.x * regrowNoiseScale + 200f, p.y * regrowNoiseScale + 200f);   // other offset: slow patches differ from late patches
+            speedMul[i] = Mathf.Lerp(1f - regrowSpeedJitter * 0.5f, 1f + regrowSpeedJitter * 0.5f, speedNoise);
         }
         this.fog = new float[pixels.Length];
         lastCleared = new float[pixels.Length];
@@ -98,6 +151,7 @@ public class FogGrid : MonoBehaviour
         var sr = visual.AddComponent<SpriteRenderer>();
         sr.sprite = Sprite.Create(tex, new Rect(0, 0, w, h), Vector2.zero, pixelsPerUnit);
         sr.sortingOrder = sortingOrder;
+        if (fogMaterial != null) sr.sharedMaterial = fogMaterial;
 
         // Blocking: one box collider per cell, on a child so the Fog object's Inspector stays light.
         var blockers = new GameObject("Fog Colliders");
@@ -132,12 +186,18 @@ public class FogGrid : MonoBehaviour
 
     void Update()
     {
+        // Haze for the fog shader. No cow = zero radius = effect off. Globals, so no material instance is made.
+        Vector2 hazeCenter = cow != null ? (Vector2)cow.position + Vector2.up * cowHazeHeight : Vector2.zero;
+        Vector2 hazeSize = cow != null ? cowHazeRadius : Vector2.zero;
+        Shader.SetGlobalVector("_CowHazeOval", new Vector4(hazeCenter.x, hazeCenter.y, hazeSize.x, hazeSize.y));
+        Shader.SetGlobalVector("_CowHazeLook", new Vector4(cowHazeSoftness, cowHazeAmount, 0f, 0f));
+        // One wind for everything that drifts: the fog shader and the grass shader both read this global.
+        Shader.SetGlobalVector("_FogWind", wind);
         if (crow != null) Clear(crow.position, clearRadius);
         Regrow();
         if (dirty)
         {
-            float maxA = fogColor.a * 255f;
-            for (int i = 0; i < pixels.Length; i++) pixels[i].a = (byte)(fog[i] * maxA);
+            for (int i = 0; i < pixels.Length; i++) pixels[i].a = (byte)(fog[i] * maxAlpha[i]);
             tex.SetPixels32(pixels);
             tex.Apply();
             dirty = false;
@@ -176,7 +236,33 @@ public class FogGrid : MonoBehaviour
                 }
         }
         Random.state = oldState;   // don't disturb other scripts' randomness
+        int blurPx = Mathf.RoundToInt(lookBlur * pixelsPerUnit);
+        if (blurPx > 0) Blur(look, w, h, blurPx);
         return look;
+    }
+
+    // Box blur along rows, then columns, twice, so puff edges fade smoothly. Runs once in Start.
+    // ponytail: plain sum per pixel (cost grows with the radius); a running sum if Start gets slow.
+    void Blur(float[] a, int w, int h, int r)
+    {
+        var tmp = new float[a.Length];
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float sum = 0f; int n = 0;
+                    for (int k = Mathf.Max(0, x - r); k <= Mathf.Min(w - 1, x + r); k++) { sum += a[y * w + k]; n++; }
+                    tmp[y * w + x] = sum / n;
+                }
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float sum = 0f; int n = 0;
+                    for (int k = Mathf.Max(0, y - r); k <= Mathf.Min(h - 1, y + r); k++) { sum += tmp[k * w + x]; n++; }
+                    a[y * w + x] = sum / n;
+                }
+        }
     }
 
     // Coarse 64x64 scan is enough to find the peak of a blurry cloud.
@@ -212,11 +298,15 @@ public class FogGrid : MonoBehaviour
         int x1 = Mathf.Min(tex.width - 1, Mathf.CeilToInt((center.x + reach - origin.x) * pixelsPerUnit));
         int y0 = Mathf.Max(0, Mathf.FloorToInt((center.y - reach - origin.y) * pixelsPerUnit));
         int y1 = Mathf.Min(tex.height - 1, Mathf.CeilToInt((center.y + reach - origin.y) * pixelsPerUnit));
+        // Turn the cloud stamp by a noise angle that depends on where it lands. An identical stamp slid along a path
+        // lines its widest side up into a dead-straight edge; a turning one gives bumpy edges on both sides.
+        float turn = Mathf.PerlinNoise(center.x * 1.5f + 300f, center.y * 1.5f + 300f) * 360f * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(turn), sin = Mathf.Sin(turn);
         for (int y = y0; y <= y1; y++)
             for (int x = x0; x <= x1; x++)
             {
                 Vector2 p = origin + new Vector2(x + 0.5f, y + 0.5f) / pixelsPerUnit;
-                float t = clearShape != null ? ShapeFog(p, center, radius)
+                float t = clearShape != null ? ShapeFog(p, center, radius, cos, sin)
                         : Mathf.Clamp01((Vector2.Distance(p, center) + Wobble(p) - (radius - soft)) / soft);
                 int i = y * tex.width + x;
                 if (t < fog[i]) { fog[i] = t; dirty = true; }
@@ -241,12 +331,14 @@ public class FogGrid : MonoBehaviour
     // clearFalloff thins the clearing toward the radius, so outer rings keep some fog (it must reach 0 at the edge,
     // because the image's cloud touches its borders and would leave straight edges).
     // Wobble pushes the rings in and out, so the trail's edge is ragged instead of a smooth brush stroke.
-    float ShapeFog(Vector2 p, Vector2 center, float radius)
+    float ShapeFog(Vector2 p, Vector2 center, float radius, float cos, float sin)
     {
         Vector2 d = p - center;
         float dist = d.magnitude;
         if (dist >= radius) return 1f;
-        Color c = clearShape.GetPixelBilinear(d.x / (2f * radius) + 0.5f, d.y / (2f * radius) + 0.5f);
+        float u = (d.x * cos + d.y * sin) / (2f * radius) + 0.5f;
+        float v = (-d.x * sin + d.y * cos) / (2f * radius) + 0.5f;
+        Color c = clearShape.GetPixelBilinear(u, v);
         float a = Mathf.Clamp01(c.grayscale * c.a / clearShapeMax) * Mathf.Clamp01(clearFalloff.Evaluate((dist + Wobble(p)) / radius));
         return 1f - a;
     }
@@ -267,14 +359,21 @@ public class FogGrid : MonoBehaviour
             for (int x = 0; x < w; x++)
             {
                 int i = y * w + x;
-                if (fog[i] >= restFog[i] || Time.time - lastCleared[i] < regrowDelay) continue;
+                if (fog[i] >= restFog[i] || Time.time - lastCleared[i] < waitTime[i]) continue;
+                float target = restFog[i];
                 if (cow != null)
                 {
                     Vector2 p = origin + new Vector2(x + 0.5f, y + 0.5f) / pixelsPerUnit;
                     float d = Vector2.Distance(cow.position, p);
-                    if (d <= cowSafeRadius + edgeNoise && d + Wobble(p) <= cowSafeRadius) continue;   // first test skips the noise for far pixels
+                    if (d <= cowSafeRadius + cowSafeFade + edgeNoise)   // first test skips the noise for far pixels
+                    {
+                        // 0 inside the safe bubble, rising to 1 over cowSafeFade: fog near the edge only regrows partway, so no hard line.
+                        float k = Mathf.Clamp01((d + Wobble(p) - cowSafeRadius) / Mathf.Max(cowSafeFade, 0.001f));
+                        target = restFog[i] * Mathf.SmoothStep(0f, 1f, k);
+                    }
                 }
-                fog[i] = Mathf.Min(restFog[i], fog[i] + grow);
+                if (fog[i] >= target) continue;
+                fog[i] = Mathf.Min(target, fog[i] + grow * speedMul[i]);
                 dirty = true;
             }
 

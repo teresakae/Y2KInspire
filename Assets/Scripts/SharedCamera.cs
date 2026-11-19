@@ -16,8 +16,13 @@ public class SharedCamera : MonoBehaviour
     [Tooltip("How far inside the view edge the players are held, in units.")]
     [SerializeField] private float edgeMargin = 0.5f;
 
+    [Tooltip("Seconds a shake takes to fade out.")]
+    [SerializeField] private float shakeTime = 0.25f;
+
     Camera cam;
     Vector3 velocity;   // SmoothDamp's working memory
+    Vector3 shakeOffset;   // what the shake added last frame; taken off again before following
+    float shakeStrength, shakeTimer;
 
     void Awake()
     {
@@ -29,6 +34,7 @@ public class SharedCamera : MonoBehaviour
     void LateUpdate()
     {
         if (cam == null || players == null || players.Length == 0) return;
+        transform.position -= shakeOffset;   // follow from the true position so the shake never drifts the camera
         Vector2 mid = Vector2.zero;
         foreach (var p in players) mid += p.position;
         mid /= players.Length;
@@ -36,6 +42,22 @@ public class SharedCamera : MonoBehaviour
         mid.y = Mathf.Clamp(mid.y, minPosition.y, maxPosition.y);
         Vector3 target = new Vector3(mid.x, mid.y, transform.position.z);
         transform.position = Vector3.SmoothDamp(transform.position, target, ref velocity, smoothTime);
+
+        shakeOffset = Vector3.zero;
+        if (shakeTimer > 0f)
+        {
+            shakeTimer -= Time.deltaTime;
+            shakeOffset = (Vector3)(Random.insideUnitCircle * shakeStrength * Mathf.Clamp01(shakeTimer / shakeTime));
+            transform.position += shakeOffset;
+        }
+    }
+
+    /// <summary>Short decaying random jolt, strength in units. A new shake never replaces a bigger one still running.</summary>
+    public void Shake(float strength)
+    {
+        if (shakeTimer > 0f && strength < shakeStrength * Mathf.Clamp01(shakeTimer / shakeTime)) return;
+        shakeStrength = strength;
+        shakeTimer = shakeTime;
     }
 
     // ponytail: setting rb.position is a hard invisible wall; fine for 2 players on 1 screen.
@@ -44,7 +66,7 @@ public class SharedCamera : MonoBehaviour
         if (cam == null || players == null) return;
         float halfH = cam.orthographicSize - edgeMargin;
         float halfW = cam.orthographicSize * cam.aspect - edgeMargin;
-        Vector2 c = transform.position;
+        Vector2 c = transform.position - shakeOffset;   // clamp against the true view, not the shaken one
         foreach (var p in players)
         {
             Vector2 pos = p.position;

@@ -5,6 +5,27 @@ TextureImporter:
   - first:
       213: -5031145068128796023
     second: cow and crow tileset_0
+  - first:
+      213: 3378339595812687784
+    second: SPR_GroundMeadow
+  - first:
+      213: 5915324827895073496
+    second: SPR_GroundPond
+  - first:
+      213: 6883668507498308901
+    second: SPR_GroundDarkFill
+  - first:
+      213: -486316293464432509
+    second: SPR_GroundWaterFill
+  - first:
+      213: -4282991935026564440
+    second: SPR_GroundFill
+  - first:
+      213: 7171366051530099050
+    second: SPR_GroundBush
+  - first:
+      213: -3682349412379318584
+    second: SPR_GroundPuddle
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -48,7 +69,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
@@ -74,7 +95,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -128,23 +149,243 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: cow and crow tileset_0
+      name: SPR_GroundMeadow
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 2684
-        height: 2841
+        y: 1561
+        width: 1280
+        height: 1280
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 98289b87738cd2ab0800000000000000
-      internalID: -5031145068128796023
+      spriteID: 8af4d0396f542ee20800000000000000
+      internalID: 3378339595812687784
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundPond
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 1561
+        width: 1280
+        height: 1280
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8da0cb91794771250800000000000000
+      internalID: 5915324827895073496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundDarkFill
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1305
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 525eafc4904b78f50800000000000000
+      internalID: 6883668507498308901
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundWaterFill
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 1305
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 380619f58e14049f0800000000000000
+      internalID: -486316293464432509
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundFill
+      rect:
+        serializedVersion: 2
+        x: 1792
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a2f0e00781cf84c0800000000000000
+      internalID: -4282991935026564440
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundBush
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 892
+        width: 335
+        height: 305
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a694fb7ad6fc58360800000000000000
+      internalID: 7171366051530099050
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SPR_GroundPuddle
+      rect:
+        serializedVersion: 2
+        x: 1391
+        y: 895
+        width: 295
+        height: 301
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c6234828baa5ecc0800000000000000
+      internalID: -3682349412379318584
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: grass_tuft_0
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 2425
+        width: 105
+        height: 67
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: adf59669597714684b6595014eec7c68
+      internalID: -483003065
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: grass_tuft_1
+      rect:
+        serializedVersion: 2
+        x: 531
+        y: 2503
+        width: 100
+        height: 61
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 62e8492772d8f4ebab492e0b0003c824
+      internalID: -1901036733
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: grass_tuft_2
+      rect:
+        serializedVersion: 2
+        x: 639
+        y: 2433
+        width: 104
+        height: 62
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 323e6ddef4eee434883db1ba6db0be5b
+      internalID: -952655690
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: grass_tuft_3
+      rect:
+        serializedVersion: 2
+        x: 561
+        y: 2367
+        width: 95
+        height: 60
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3de7359434af14c20abc5727daaee983
+      internalID: -507588391
       vertices: []
       indices: 
       edges: []
@@ -153,7 +394,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: dcd29f110e56a4793bf3bed64eb8bfdb
     internalID: 0
     vertices: []
     indices: 
@@ -163,7 +404,18 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
+      SPR_GroundBush: 7171366051530099050
+      SPR_GroundDarkFill: 6883668507498308901
+      SPR_GroundFill: -4282991935026564440
+      SPR_GroundMeadow: 3378339595812687784
+      SPR_GroundPond: 5915324827895073496
+      SPR_GroundPuddle: -3682349412379318584
+      SPR_GroundWaterFill: -486316293464432509
       cow and crow tileset_0: -5031145068128796023
+      grass_tuft_0: -483003065
+      grass_tuft_1: -1901036733
+      grass_tuft_2: -952655690
+      grass_tuft_3: -507588391
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

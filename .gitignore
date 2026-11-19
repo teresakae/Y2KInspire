@@ -17,3 +17,6 @@
 *.user
 
 .DS_Store
+
+# WebGL build output
+/CowAndCrow/

@@ -90,12 +90,14 @@ Assets/
   Level1.unity at the Assets root for now; the only scene in the build
   Scenes/      SampleScene.unity = the prototype, not in build
   Scripts/     FogGrid.cs, PlayerControl.cs
+  Shaders/     FogSwirl.shader, GrassSway.shader
+  Materials/   M_FogSwirl, M_MoteGlow, M_GrassSway
   Sprites/     Cow/ and Crow/ (4-direction pngs; crow also fly.png)
   Settings/    URP assets, InputSystem_Actions.inputactions, scene templates
   Plugins/     FMOD/
   Welcome/     Unity 2D template leftover, unused
   Art/         create when first needed: artist source art
-  Prefabs/     create when first needed
+  Prefabs/     PF_ prefabs (Fruit, HUD, WallTree, GrassTuft)
   Audio/       create when first needed: FMOD banks
   Sandbox/     create when first needed: experiments, nothing references it
 docs/          one doc per system, see docs/README.md
