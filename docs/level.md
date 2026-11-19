@@ -4,7 +4,7 @@ Status: the three scripts are written. `Level1.unity` is built (camera, fog, cle
 
 ## What it is
 
-The player starts in a small clearing surrounded by fog and walls of trees. A faint "moo!" shows at the bottom-right of the screen every few seconds. The crow clears fog to the right and the cow follows. The camera slides along with both animals. On the second screen there is a second clearing with a fruit tree. The crow arrives low on energy, so the players learn the loop: cow rams the tree, fruit drops, crow eats it. Past the tree, the exit is on the right edge of screen 2. When the cow walks into it the screen fades to white and the level restarts (Level2 does not exist yet). The level opens with a fade from white.
+The player starts in a small clearing surrounded by fog and walls of trees. A faint "moo!" shows at the bottom-right of the screen every few seconds. The crow clears fog to the right and the cow follows. The camera slides along with both animals. On the second screen there is a second clearing with a fruit tree. The crow arrives low on energy, so the players learn the loop: cow rams the tree, fruit drops, crow eats it. Past the tree, the exit is on the right edge of screen 2. When the cow and the crow are both inside it the screen fades to white and the level restarts (Level2 does not exist yet). The level opens with a fade from white.
 
 ## Where it lives
 
@@ -32,11 +32,11 @@ Order of events:
 2. Every frame, `SharedCamera` moves toward the midpoint of the players (limited by `Min Position` / `Max Position`), smoothed by `Smooth Time`.
 3. Every physics step, `SharedCamera` clamps each player's Rigidbody2D position into the camera's view, shrunk by `Edge Margin`. This is a hard invisible wall: neither animal can leave the screen, so the cow can't be left behind. (ponytail note in the script: fine for two players on one screen.)
 4. The crow clears fog (see `fog.md`), the cow follows, rams the tree, the crow eats (see `players.md`, `trees.md`).
-5. The cow enters the exit trigger. `LevelExit` starts fading to white. When alpha reaches 1 it loads `Next Scene`, or reloads the current scene if `Next Scene` is empty.
+5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` (if set) and starts fading to white. When alpha reaches 1 it loads `Next Scene`, or reloads the current scene if `Next Scene` is empty. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
 
 `MooPrompt`: `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval. The result is multiplied by `Max Alpha` and set on the text. Fixed screen corner, not the real direction of the herd. The owner places it with anchors on the canvas, not in code.
 
-`LevelExit`: only the cow's collider triggers it (the `Cow` field). Only the Image's alpha changes, its RGB stays as set in the Inspector.
+`LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" for the menu's Continue button (see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
 
 ## Scene setup
 
@@ -80,13 +80,15 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 | Moo hold (s) | Moo text | MooPrompt > Hold Time | not set up yet (planned: 1) |
 | Moo strength | Moo text | MooPrompt > Max Alpha | not set up yet (planned: 0.6) |
 | Cow | Exit | LevelExit > Cow | Cow's BoxCollider2D |
+| Crow | Exit | LevelExit > Crow | Crow's trigger CircleCollider2D (to set) |
 | Fade image | Exit | LevelExit > Fade | HUD > Fade |
 | Fade length (s) | Exit | LevelExit > Fade Time | 1.5 |
-| Next level | Exit | LevelExit > Next Scene | empty (reloads Level1) |
+| Next level | Exit | LevelExit > Next Scene | empty (reloads Level1, saves nothing) |
 | Fog area / position / puffs / start clearings | Fog Grid | see `fog.md` | 45.6 x 14.4 at (10.68, 0), 94 puffs, 2 clearings |
 
 ## Gotchas
 
+- With Next Scene empty nothing is saved, so Continue stays hidden until a level with a Next Scene is finished.
 - Any scene loaded by `LevelExit` must be in `File > Build Profiles` scene list, or the load fails. Level1 itself must be added too.
 - The layers and the collision matrix live in shared Project Settings, so changing them affects every scene.
 - The fog area must cover the full range the camera can see: camera centre limits plus half the view on each side (about x -10.7 to 32, y -6 to 6). Bare ground outside the fog area shows no fog.

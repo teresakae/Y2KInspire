@@ -7,6 +7,7 @@ One file per system. Each describes how that system works right now, where it li
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy |
 | trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`) | Level layout, camera, level start or end, layers and collision matrix |
+| menu.md | Main menu: start, continue, settings (fullscreen, volume), quit, saved level and volume (`MainMenu.cs`) | Menu scene, PlayerPrefs saves, build scene order |
 | grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
 

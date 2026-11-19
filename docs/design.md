@@ -137,9 +137,9 @@ Gimersia Inspire 2026 (Indonesia).
 | Moo guidance (FMOD) | Placeholder: faint text on a timer (`MooPrompt`). No FMOD. | FMOD is installed, no events. See `level.md`. |
 | Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
-| Win condition | Placeholder: exit fades to white and restarts Level1 (`LevelExit`). | See `level.md`. |
+| Win condition | Placeholder: exit fades to white and restarts Level1 once both animals are in it (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
-| Start menu | Not yet | |
+| Start menu | Script written (`MainMenu`: start, continue, settings, quit). Scene not built yet. | See `menu.md`. |
 | UI feedback | Not yet | |
 | Level1 | Partial — scene built (camera, fog, clearings, tree walls, fruit tree, exit, HUD). See `level.md`. | Moo text not placed; crow still flies through tree walls. |
 | Level2 | Not yet | |
