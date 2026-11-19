@@ -4,14 +4,14 @@ Status: the three scripts are written. `Level1.unity` is built (camera, fog, cle
 
 ## What it is
 
-The player starts in a small clearing surrounded by fog and walls of trees. A faint "moo!" shows at the bottom-right of the screen every few seconds. The crow clears fog to the right and the cow follows. The camera slides along with both animals. On the second screen there is a second clearing with a fruit tree. The crow arrives low on energy, so the players learn the loop: cow rams the tree, fruit drops, crow eats it. Past the tree, the exit is on the right edge of screen 2. When the cow and the crow are both inside it the screen fades to white and the level restarts (Level2 does not exist yet). The level opens with a fade from white.
+The player starts in a small clearing surrounded by fog and walls of trees. A faint "moo!" speech bubble pops up every few seconds and points toward the goal. The crow clears fog to the right and the cow follows. The camera slides along with both animals. On the second screen there is a second clearing with a fruit tree. The crow arrives low on energy, so the players learn the loop: cow rams the tree, fruit drops, crow eats it. Past the tree, the exit is on the right edge of screen 2. When the cow and the crow are both inside it the screen fades to white and the level restarts (Level2 does not exist yet). The level opens with a fade from white.
 
 ## Where it lives
 
 - Scripts: `Assets/Scripts/SharedCamera.cs`, `Assets/Scripts/MooPrompt.cs`, `Assets/Scripts/LevelExit.cs`
 - Scene: `Assets/Level1.unity` (started as a copy of SampleScene; since the mist swap it is the `FogTest_Mist` scene, see `fog.md`)
 - Look objects: `Mist` (two layers of drifting wisps), `Motes` (floating specks), `Global Volume` (post-processing, `Assets/Settings/VP_Mist.asset`), `Crow > Light 2D` (warm glow), `Grass` (swaying tufts, see `grass.md`). Assets: `Assets/Shaders/FogSwirl.shader`, `Assets/Materials/M_FogSwirl.mat`, `M_MoteGlow.mat`, scripts `MistDrift.cs`, `MistMask.cs`.
-- Scene objects: `Snake` is inactive (hidden in Level1; snakes start in Level2, see `snakes.md`). `Main Camera` holds `SharedCamera`. `Exit` holds `LevelExit`. `HUD > Fade` is the fade. Not built yet: the moo text (a TextMeshPro text under `HUD` holding `MooPrompt`).
+- Scene objects: `Snake` is inactive (hidden in Level1; snakes start in Level2, see `snakes.md`). `Main Camera` holds `SharedCamera`. `Exit` holds `LevelExit`. `HUD > Fade` is the fade. `HUD > MooBubble` is the moo bubble (see below).
 
 ## Layout
 
@@ -34,7 +34,11 @@ Order of events:
 4. The crow clears fog (see `fog.md`), the cow follows, rams the tree, the crow eats (see `players.md`, `trees.md`).
 5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` (if set) and starts fading to white. When alpha reaches 1 it loads `Next Scene`, or reloads the current scene if `Next Scene` is empty. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
 
-`MooPrompt`: `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval. The result is multiplied by `Max Alpha` and set on the text. Fixed screen corner, not the real direction of the herd. The owner places it with anchors on the canvas, not in code.
+`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and moves `Tail Distance` px from the bubble centre on that side (straight down when the goal is on screen); `Tail Angle Offset` fixes the art direction. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden; `SetTarget(Transform)` swaps the goal (a later AreaGate will call it when an area opens). FMOD positional moo goes here later.
+
+Moo bubble fields (`MooPrompt`): `Interval` 6, `Fade Time` 0.6, `Hold Time` 1, `Max Alpha` 0.6, `Bubble` (RectTransform), `Tail` (RectTransform), `Group` (CanvasGroup), `Cam` (empty = Main Camera), `Target` (Transform, e.g. `Exit`), `Edge Padding` 80 px, `On Screen Offset` 60 px, `Tail Angle Offset` 45 deg (square art), `Tail Distance` 50 px (scene values; script defaults are 0 and 60).
+
+Placed hierarchy: `HUD > MooBubble` [RectTransform, CanvasGroup, Image body, MooPrompt] with children `Tail` (first child so the body draws over it; a 40 x 40 square, `UISprite`, peach #F4C7A8, turned by code so its corner points at the goal) and `Text` (TMP "moo!", 40, plum #2E1A2B). `MooBubble` is 200 x 100, `UISprite` sliced, peach, CanvasGroup alpha 0, sits before `Fade` in sibling order so the white fade covers it. Set: `Target` = `Exit`, `Tail Distance` 50, `Tail Angle Offset` 45, other fields default. `Bubble` and `Group` point at `MooBubble`; `Tail` at `Tail`. Anchors/pivot centred on `MooBubble` (the script sets its screen position directly).
 
 `LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" for the menu's Continue button (see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
 
@@ -75,10 +79,10 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 | Camera limits | Main Camera | SharedCamera > Min Position / Max Position | (0, 0) and (21.35, 0) |
 | Hold-inside margin | Main Camera | SharedCamera > Edge Margin | 0.5 |
 | Shake fade (s) | Main Camera | SharedCamera > Shake Time | 0.25 (`Shake(strength)` is called by `CowRam` on a ram hit, see players.md) |
-| Seconds between moos | Moo text | MooPrompt > Interval | not set up yet (planned: 6) |
-| Moo fade (s) | Moo text | MooPrompt > Fade Time | not set up yet (planned: 0.6) |
-| Moo hold (s) | Moo text | MooPrompt > Hold Time | not set up yet (planned: 1) |
-| Moo strength | Moo text | MooPrompt > Max Alpha | not set up yet (planned: 0.6) |
+| Seconds between moos | MooBubble | MooPrompt > Interval | 6 |
+| Moo fade (s) | MooBubble | MooPrompt > Fade Time | 0.6 |
+| Moo hold (s) | MooBubble | MooPrompt > Hold Time | 1 |
+| Moo strength | MooBubble | MooPrompt > Max Alpha | 0.6 |
 | Cow | Exit | LevelExit > Cow | Cow's BoxCollider2D |
 | Crow | Exit | LevelExit > Crow | Crow's trigger CircleCollider2D (to set) |
 | Fade image | Exit | LevelExit > Fade | HUD > Fade |
@@ -98,7 +102,6 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 ## Not built yet
 
 - FMOD moo. Right now it is only text.
-- Moo direction: the text does not point toward the herd.
 - Level2, and the exit loading it (`Next Scene` is empty).
 - A solid collider on the crow, and the `Cow` layer, so tree walls stop the crow.
 - The `Snake` object is in Level1 but inactive; snakes start in Level2.

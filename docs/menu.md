@@ -1,6 +1,6 @@
 # Main menu
 
-Status: `MainMenu.cs` is written. The `MainMenu` scene is not built yet (editor setup below).
+Status: script and scene are built. Build index 0. Feel and art not tuned.
 
 ## What it is
 
@@ -9,7 +9,7 @@ The first screen. A title and a column of buttons: Start, Continue, Settings, Ex
 ## Where it lives
 
 - Script: `Assets/Scripts/MainMenu.cs`, on the menu Canvas.
-- Scene: `Assets/Scenes/MainMenu.unity` (to be created). Must be build index 0.
+- Scene: `Assets/Scenes/MainMenu.unity`. Must be build index 0 (it is: MainMenu, Level1, SampleScene off).
 - Save written by `LevelExit` (see `level.md`) when both animals reach an exit with a `Next Scene`.
 
 ## How it works
@@ -39,15 +39,23 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 | `SetFullscreen(bool)` | Toggle On Value Changed, Dynamic bool |
 | `SetVolume(float)` | Slider On Value Changed, Dynamic float |
 
-## Editor setup
+## Scene
 
-1. `File > New Scene`, pick the 2D template (Basic 2D (URP) if listed). Save as `Assets/Scenes/MainMenu.unity`.
-2. `GameObject > UI > Canvas`. Canvas: Render Mode Screen Space - Overlay. Canvas Scaler: UI Scale Mode Scale With Screen Size, Reference Resolution 1920 x 1080. Unity adds an EventSystem; make sure it uses `Input System UI Input Module` (click the "Replace with InputSystemUIInputModule" button if it shows).
-3. Under the Canvas: `Title` (`GameObject > UI > Text - TextMeshPro`), and a `Buttons` empty object with a `Vertical Layout Group` (Control Child Size on, Child Alignment Middle Center, Spacing about 20). Under `Buttons`: four `Button - TextMeshPro` objects named `StartButton`, `ContinueButton`, `SettingsButton`, `ExitButton`.
-4. Under the Canvas: `SettingsPanel` (an Image, stretched, `GameObject > UI > Panel`). Inside it: a TMP text for the controls card, a `Toggle` (fullscreen), a `Slider` (Min 0, Max 1, Whole Numbers off), a `BackButton`. Untick the `SettingsPanel` active checkbox. Build it as a prefab if it grows.
-5. Add `MainMenu` to the Canvas. Fill `MainMenu > Continue Button`, `Exit Button`, `Settings Panel`, `Fullscreen Toggle`, `Volume Slider`. `First Level` stays "Level1".
-6. OnClick for each button: drag the Canvas into the slot, pick `MainMenu > method` as in the table above. Toggle: `Toggle > On Value Changed > MainMenu > SetFullscreen` under Dynamic bool. Slider: `Slider > On Value Changed > MainMenu > SetVolume` under Dynamic float.
-7. `File > Build Profiles`: scene list with `MainMenu` first (index 0), then `Level1`.
+Built through the bridge. Edit in the editor from here.
+
+```
+Main Camera (ortho 6, solid #2E1A2B)
+Global Light 2D
+EventSystem (InputSystemUIInputModule)
+Canvas (Overlay, scale 1920x1080 match 0.5, MainMenu script)
+  Title
+  Buttons (VerticalLayoutGroup + ContentSizeFitter)
+    StartButton, ContinueButton, SettingsButton, ExitButton
+  SettingsPanel (inactive)
+    ControlsText, FullscreenToggle, VolumeRow (VolumeLabel, VolumeSlider), BackButton
+```
+
+All `MainMenu` fields and OnClick / On Value Changed lists are wired. Buttons use the built-in UI sprite, placeholder look.
 
 ## Gotchas
 
@@ -60,6 +68,6 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 
 ## Not built yet
 
-- The scene itself and its art.
+- Menu art (buttons are the default UI sprite).
 - Volume routed to an FMOD bus.
 - A way to start over after Continue shows (no "reset save" button).
