@@ -18,16 +18,18 @@ Everything happens in `Update`, in this order:
 1. Read the keyboard (`Keyboard.current`). Cow `Controls` = WASD: W up, S down, A left, D right. Arrows: the four arrow keys. `x` and `y` are each -1, 0 or 1. Opposite keys cancel to 0. If there is no keyboard, input is 0.
 2. `moving` = any key held. While moving, `lastDir` (public, hidden) = `(x, y)`. `CowRam` aims with it.
 3. Pick the facing sprite: right if x > 0, left if x < 0, otherwise back if y > 0, front if y < 0. Left/right wins on diagonals. If nothing is pressed, keep the last facing.
-4. Pick the shown sprite. Flying (moving and `Fly` is set): `Fly`. Otherwise, moving right with `Walk Right` frames: cycle them, frame = `(int)(Time.time * Walk Fps) % length`. Same for left with `Walk Left`. With no left/right input: up uses `Walk Up`, down uses `Walk Down`. Otherwise the last facing sprite. Standing still always shows the facing sprite. Show `Fly Shadow` only while moving (if set).
+4. Pick the shown sprite. Flying (moving and `Fly` is set): `Fly`. Otherwise, moving right with `Walk Right` frames: cycle them, frame = `(int)(Time.time * Walk Fps) % length`. Same for left with `Walk Left`. With no left/right input: up uses `Walk Up`, down uses `Walk Down`. Otherwise the last facing sprite. Standing still always shows the facing sprite. Show `Fly Shadow` only while moving (if set); at the same time hide `Ground Shadow` (if set).
 5. If flying, the object snaps (no smooth turn) to one of four headings: right 0°, left 180°, up 90°, down -90°, picked like the facing sprite (left/right wins on diagonals), plus `Fly Angle` as an offset: `fly.png` has its head at the bottom, so 90. Tired and moving: it sways by `Waddle Angle` at `Waddle Speed`. Otherwise it is upright.
-6. If `Fly Shadow` is set, keep it unrotated and at its starting offset from the object, so it stays flat while the crow spins.
+6. If `Fly Shadow` is set, keep it at its starting offset from the object in world space (straight below, not swung round by the spin), but give it the crow's rotation, so its long side follows the wings (wings are horizontal flying up/down, vertical flying left/right).
 7. Set the Rigidbody2D's `linearVelocity` to `(x, y) * Mov Speed * speedScale`. `speedScale` (public, hidden, default 1) is set by `CrowEnergy`.
 
-`Start` caches the Rigidbody2D and SpriteRenderer, remembers the starting sprite as the facing, and records the shadow's offset from the object.
+`Start` caches the Rigidbody2D and SpriteRenderer, remembers the starting sprite as the facing, and records the shadow's offset from the object and sets its scale so it measures `Fly Shadow Size` in the world (sprite and parent scale are divided out).
 
 The cow has `Fly` and `Fly Shadow` empty, so the fly parts of steps 4 to 6 do nothing for it: it never rotates and swaps only the facing sprites and walk frames. Its `Shadow` child is static.
 
 ## Cow ram
+
+Juice (all in `CowRam`, strength scales with the charge): while dashing the cow stretches along the dash (`Dash Stretch`, longer and thinner). On touching any tree (fruit or wall) it squashes along the dash (`Hit Squash`) and hops back for `Hop Time` at `Hop Speed` x charge, steering stays off until then, then the scale goes back to normal (`EndDash`, and `OnDisable` as a safety). A strong hit on a fruit tree also calls `SharedCamera.Shake(Hit Shake x charge)`. A weak dash or a wall tree only gets `Weak Shake`. `SharedCamera > Shake Time` (0.25) is how long a shake fades; the shake is taken off before the camera follows, so it never drifts.
 
 `CowRam` on the cow. Hold Space (`Ram Key`) to charge, release to dash. Order of events:
 
@@ -60,12 +62,17 @@ On the `PlayerControl` component of each object.
 | Moving sprite | Cow | PlayerControl > Fly | empty |
 | Moving sprite | Crow | PlayerControl > Fly | Sprites/Crow/fly |
 | Moving shadow | Cow | PlayerControl > Fly Shadow | empty |
-| Moving shadow | Crow | PlayerControl > Fly Shadow | FlyShadow (child) |
+| Moving shadow | Crow | PlayerControl > Fly Shadow | FlyShadow (child; its scale is set by code from Fly Shadow Size) |
+| Fly shadow size (world units: along wings, across body) | Crow | PlayerControl > Fly Shadow Size | 1.45 x 0.5 (wingspan is 1.82, so about 80%) |
+| Resting shadow, hidden while the fly shadow shows | Crow | PlayerControl > Ground Shadow | Shadow (child) |
 | Walk frames | Cow | PlayerControl > Walk Left / Walk Right / Walk Up / Walk Down | cow_walk_left_0..2 / cow_walk_right_0..2 / cow_walk_back_0..2 / cow_walk_front_0..2 |
 | Walk frames | Crow | PlayerControl > Walk Left / Walk Right / Walk Up / Walk Down | not set up yet (empty) |
 | Walk speed (frames/s) | Cow, Crow | PlayerControl > Walk Fps | 8 (default, not set up yet) |
+| Fly sprite size | `Assets/Sprites/Crow/fly.png` | Import > Pixels Per Unit | 70 (was 100; the other crow sprites are 100). Wing-out art is drawn small in its canvas, so 70 makes it about 1.43x bigger. Lower = bigger |
 | Fly sprite rotation offset | Crow | PlayerControl > Fly Angle | 90 (default, check in scene) |
 | Ram key | Cow | CowRam > Ram Key | not set up yet (default Space) |
+| Ram juice | Cow | CowRam > Cam | Main Camera |
+| Ram juice | Cow | CowRam > Dash Stretch / Hit Squash / Hop Time / Hop Speed / Hit Shake / Weak Shake | 1.2 / 0.7 / 0.15 / 5 / 0.3 / 0.04 |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
 | Crow size | Crow | Transform > Scale | 0.5 |
@@ -81,6 +88,7 @@ On the `PlayerControl` component of each object.
 - Velocity is set in `Update`, not `FixedUpdate`. Interpolate on the Rigidbody2D smooths this.
 - The crow has only its trigger collider, so nothing solid stops it. It flies over fog colliders and the cow. The cow stops at fog because its own BoxCollider2D hits the fog cells (see `fog.md`).
 - The flying snap sets `transform.rotation` directly even though Rigidbody2D rotation is frozen. This works now. Watch it if a collider is added to the crow.
+- The `Shadow` child spins with the crow (it is a child), so while flying it swung to the side of the sprite. `Ground Shadow` hides it during flight and the unrotated `Fly Shadow` takes over. `FlyShadow` had scale (0, -1, 0), so it was invisible; its size now comes from `Fly Shadow Size`.
 - `Fly` and `Fly Shadow` are both optional and independent. If `Fly` is empty but `Fly Shadow` is set, the shadow still shows while moving but the object doesn't rotate.
 - The sprite for the cow facing and the crow facing are set per-object through the Inspector; no assets are looked up by name.
 - `PlayerControl` is disabled during the cow's charge and dash, so WASD does nothing then, and the walk sprites stop updating.

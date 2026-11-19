@@ -16,6 +16,10 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private Sprite fly;
     [Tooltip("Shown while moving (optional).")]
     [SerializeField] private GameObject flyShadow;
+    [Tooltip("Fly shadow size in world units: x = along the wings, y = across the body. Wingspan is about 1.8, so 1.45 is about 80%.")]
+    [SerializeField] private Vector2 flyShadowSize = new Vector2(1.45f, 0.5f);
+    [Tooltip("The always-on ground shadow child (optional). Hidden while the fly shadow shows, because as a child it would spin with the crow and slide to the side.")]
+    [SerializeField] private GameObject groundShadow;
     [Tooltip("Walk frames while moving left (optional). Empty = plain facing sprite.")]
     [SerializeField] private Sprite[] walkLeft;
     [Tooltip("Walk frames while moving right (optional). Empty = plain facing sprite.")]
@@ -48,7 +52,14 @@ public class PlayerControl : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
         lastFacing = sr.sprite;
-        if (flyShadow != null) shadowOffset = flyShadow.transform.position - transform.position;
+        if (flyShadow != null)
+        {
+            shadowOffset = flyShadow.transform.position - transform.position;
+            // Scale so the shadow comes out at Fly Shadow Size in the world, whatever the sprite and parent scale are.
+            Vector3 sprite = flyShadow.GetComponent<SpriteRenderer>().sprite.bounds.size;
+            Vector3 parent = transform.lossyScale;
+            flyShadow.transform.localScale = new Vector3(flyShadowSize.x / (sprite.x * parent.x), flyShadowSize.y / (sprite.y * parent.y), 1f);
+        }
     }
 
     void Update()
@@ -77,6 +88,7 @@ public class PlayerControl : MonoBehaviour
         else if (walk != null && walk.Length > 0) sr.sprite = walk[(int)(Time.time * walkFps) % walk.Length];
         else sr.sprite = lastFacing;
         if (flyShadow != null) flyShadow.SetActive(moving && !tired);
+        if (groundShadow != null) groundShadow.SetActive(!(moving && !tired) || flyShadow == null);
 
         // Flying: snap to right/left/up/down (left/right wins on diagonals, like the facing sprite). Tired and moving: waddle. Stopped: upright.
         float heading = x > 0 ? 0f : x < 0 ? 180f : y > 0 ? 90f : -90f;
@@ -84,10 +96,10 @@ public class PlayerControl : MonoBehaviour
                            : tired && moving ? Quaternion.Euler(0, 0, Mathf.Sin(Time.time * waddleSpeed) * waddleAngle)
                            : Quaternion.identity;
 
-        // The shadow is a child, so undo the spin: keep it flat at its original offset.
+        // The shadow is a child: keep it straight below the crow (world offset, not rotated with it), but turn it with the crow so its long side follows the wings.
         if (flyShadow != null)
         {
-            flyShadow.transform.rotation = Quaternion.identity;
+            flyShadow.transform.rotation = transform.rotation;
             flyShadow.transform.position = transform.position + shadowOffset;
         }
 

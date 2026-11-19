@@ -9,7 +9,8 @@ The player starts in a small clearing surrounded by fog and walls of trees. A fa
 ## Where it lives
 
 - Scripts: `Assets/Scripts/SharedCamera.cs`, `Assets/Scripts/MooPrompt.cs`, `Assets/Scripts/LevelExit.cs`
-- Scene: `Assets/Level1.unity` (copy of SampleScene; being set up)
+- Scene: `Assets/Level1.unity` (started as a copy of SampleScene; since the mist swap it is the `FogTest_Mist` scene, see `fog.md`)
+- Look objects: `Mist` (two layers of drifting wisps), `Motes` (floating specks), `Global Volume` (post-processing, `Assets/Settings/VP_Mist.asset`), `Crow > Light 2D` (warm glow), `Grass` (swaying tufts, see `grass.md`). Assets: `Assets/Shaders/FogSwirl.shader`, `Assets/Materials/M_FogSwirl.mat`, `M_MoteGlow.mat`, scripts `MistDrift.cs`, `MistMask.cs`.
 - Scene objects: `Snake` is inactive (hidden in Level1; snakes start in Level2, see `snakes.md`). `Main Camera` holds `SharedCamera`. `Exit` holds `LevelExit`. `HUD > Fade` is the fade. Not built yet: the moo text (a TextMeshPro text under `HUD` holding `MooPrompt`).
 
 ## Layout
@@ -17,7 +18,7 @@ The player starts in a small clearing surrounded by fog and walls of trees. A fa
 Two screens side by side, each about 21.35 x 12 units (camera size 6, 16:9). Screen 1 centre is x = 0, screen 2 centre is x = 21.35. The level spans about x -10.7 to 32, y -6 to 6.
 
 - Clearing 1 on screen 1: the start. `Clearing` at (-4.8, 0.01), X scale 8.4. Cow start (-4.85, -0.06), crow start (-2.71, -1.19), both inside it.
-- Clearing 2 on screen 2: the fruit tree. `Clearing2` at (21.6, -0.12), X scale 9.6, second entry in `Fog Grid > Open At Start`. `Tree` (the fruit tree, see `trees.md`) at (21.6, -1.2). The crow reaches it low on energy.
+- Clearing 2 on screen 2: the fruit tree. `Clearing2` at (21.6, -0.12), X scale 14.4, second entry in `Fog Grid > Open At Start`. `Tree` (the fruit tree, see `trees.md`) at (21.6, -1.2). The crow reaches it low on energy.
 - `Exit` at (31.2, 0): BoxCollider2D, Is Trigger, size 1 x 4.8, in the right-edge gap. Holds `LevelExit`.
 - `HUD` (prefab `Assets/Prefabs/PF_HUD`): Screen Space Overlay canvas, Sort Order 100, Canvas Scaler 1920 x 1080. Child `Fade`: full-screen stretched white Image, alpha 0, Raycast Target off.
 - `Walls`: 23 `WallTree` prefab instances, placed through the editor bridge from the sketch, scale 0.9 to 1.1. Top row and bottom row follow a corridor: open around clearing 1 (wall edges at y about +4.4 / -4.4), narrow path between the clearings (about +2.7 / -2.7, so about 5.4 tall, room for the cow's feet collider), wide around clearing 2 (about +4.1 / -4.3), then about +2.4 / -2.4 at the right edge, which is the exit gap. The map was scaled 1.2x: each tree moved so its path-facing collider edge is 1.2x further from the level centre; tree size is unchanged. Three trees close the left side at x about -10.7. The owner adjusts by hand from here.
@@ -39,7 +40,7 @@ Order of events:
 
 ## Scene setup
 
-Tree walls: wall trees (see `trees.md`, "Wall trees"), drawn above the fog so they stay readable when fogged. They block the cow. They should block the crow too, but that is not working yet (below).
+Tree walls: wall trees (see `trees.md`, "Wall trees"). Fog is translucent and drawn over them, so they show through as misty silhouettes. They block the cow. They should block the crow too, but that is not working yet (below).
 
 Physics layers (all in shared Project Settings). Setup status: the layers `Fog` and `Crow` exist, and `Fog Grid` and `Crow` are on them. `Cow` is still on the Default layer. The collision matrix change below is not verified.
 
@@ -53,6 +54,18 @@ Physics layers (all in shared Project Settings). Setup status: the layers `Fog` 
 
 The crow needs two CircleCollider2Ds: one with Is Trigger on (eats fruit) and one solid (stopped by tree walls). Right now it has only the trigger, so it still flies through tree walls.
 
+## Ground
+
+Art: `Assets/Art/Ground/cow and crow tileset.png`, sliced into 7 sprites (Full Rect, PPU 100, Max Size 4096): `SPR_GroundMeadow` and `SPR_GroundPond` (12.8 x 12.8 units), `SPR_GroundDarkFill`, `SPR_GroundWaterFill`, `SPR_GroundFill` (tileable 2.56 x 2.56), `SPR_GroundBush`, `SPR_GroundPuddle`.
+
+Scene objects, all under the root `Ground` at (0, 0, 0):
+- `GroundFill`: SpriteRenderer, `SPR_GroundFill`, Draw Mode Tiled, Size 44 x 13, position (10.7, 0), Order in Layer -100.
+- `Meadow1` at (-4.8, 0.01) and `Meadow2` at (21.6, -0.12): `SPR_GroundMeadow`, Order in Layer -90, scale 0.656 and 0.75, so each is as wide as its clearing (8.4 and 9.6 units). They are not children of the `Clearing` objects (those are empty fog markers).
+
+Draw order: ground is -100 to -80, shadows -50, grass tufts -40, trunks 5, cow 15, crow 16, canopies 17, fruit 18, fog 19 (translucent, so it tints everything below it), moo text 20, mist wisps 21, motes 22. Ground and grass are always below the animals and the fog.
+
+Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Order in Layer -95 for fills (`SPR_GroundDarkFill`, `SPR_GroundWaterFill`, `SPR_GroundPond`), -80 for decor (`SPR_GroundBush`, `SPR_GroundPuddle`). Bush and puddle carry a light-green box around them, so only use them on light-green ground (the meadow or the fill).
+
 ## Tuning
 
 | What | Object | Field | Current value |
@@ -61,6 +74,7 @@ The crow needs two CircleCollider2Ds: one with Is Trigger on (eats fruit) and on
 | Camera catch-up (s) | Main Camera | SharedCamera > Smooth Time | 0.3 |
 | Camera limits | Main Camera | SharedCamera > Min Position / Max Position | (0, 0) and (21.35, 0) |
 | Hold-inside margin | Main Camera | SharedCamera > Edge Margin | 0.5 |
+| Shake fade (s) | Main Camera | SharedCamera > Shake Time | 0.25 (`Shake(strength)` is called by `CowRam` on a ram hit, see players.md) |
 | Seconds between moos | Moo text | MooPrompt > Interval | not set up yet (planned: 6) |
 | Moo fade (s) | Moo text | MooPrompt > Fade Time | not set up yet (planned: 0.6) |
 | Moo hold (s) | Moo text | MooPrompt > Hold Time | not set up yet (planned: 1) |

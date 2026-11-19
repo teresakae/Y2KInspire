@@ -5,8 +5,9 @@ One file per system. Each describes how that system works right now, where it li
 | design.md | What the game is meant to be, and a status table of what exists | Scope, new features, anything that changes how the game plays |
 | fog.md | The fog texture, fog colliders, clearing and regrowth (`FogGrid.cs`) | Fog, the Fog Grid object, the start clearing, anything that blocks the cow |
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy |
-| trees.md | Fruit trees and fruit, and wall trees with random looks (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
+| trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`) | Level layout, camera, level start or end, layers and collision matrix |
+| grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
 
 ## Run it
@@ -21,7 +22,7 @@ One file per system. Each describes how that system works right now, where it li
 | Scene | Purpose | In build? |
 |---|---|---|
 | `Assets/Scenes/SampleScene.unity` | Prototype. | No. Listed in `File > Build Profiles > Scene List` but unticked. |
-| `Assets/Level1.unity` | First level, copy of SampleScene. See level.md. | Yes. Index 0, the only scene in the build (`ProjectSettings/EditorBuildSettings.asset`). |
+| `Assets/Level1.unity` | First level: the misty look from `FogTest_Mist` (Sandbox copy kept). See level.md. | Yes. Index 0, the only scene in the build (`ProjectSettings/EditorBuildSettings.asset`). |
 
 Root objects in SampleScene:
 
@@ -31,6 +32,7 @@ Root objects in SampleScene:
 | Global Light 2D | The 2D light for the scene | design.md |
 | Fog Grid | `FogGrid` script. Builds the fog sprite and collider children at Start | fog.md |
 | Clearing | Empty marker. Its position and X scale set the start clearing | fog.md |
+| Grass | Parent of the `GrassTuft` prefab instances, hand placed | grass.md |
 | Cow | `PlayerControl` (WASD), Rigidbody2D, BoxCollider2D, sprite, Shadow child | players.md |
 | Crow | `PlayerControl` (arrows), Rigidbody2D, sprite, Shadow and FlyShadow children | players.md |
 
