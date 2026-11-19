@@ -63,8 +63,13 @@ The crow needs two CircleCollider2Ds: one with Is Trigger on (eats fruit) and on
 Art: `Assets/Art/Ground/cow and crow tileset.png`, sliced into 7 sprites (Full Rect, PPU 100, Max Size 4096): `SPR_GroundMeadow` and `SPR_GroundPond` (12.8 x 12.8 units), `SPR_GroundDarkFill`, `SPR_GroundWaterFill`, `SPR_GroundFill` (tileable 2.56 x 2.56), `SPR_GroundBush`, `SPR_GroundPuddle`.
 
 Scene objects, all under the root `Ground` at (0, 0, 0):
-- `GroundFill`: SpriteRenderer, `SPR_GroundFill`, Draw Mode Tiled, Size 44 x 13, position (10.7, 0), Order in Layer -100.
-- `Meadow1` at (-4.8, 0.01) and `Meadow2` at (21.6, -0.12): `SPR_GroundMeadow`, Order in Layer -90, scale 0.656 and 0.75, so each is as wide as its clearing (8.4 and 9.6 units). They are not children of the `Clearing` objects (those are empty fog markers).
+- `GroundFill`: SpriteRenderer, `SPR_GroundDarkFill` (same dark green as the meadow margin, so meadow edges have no visible square), Draw Mode Tiled, Size 44 x 13, position (10.7, 0), Order in Layer -100.
+- `Meadow1` at (3.55, -0.35), size 10.5 x 7.5.
+- `Meadow2` at (21.6, -0.8), size 9.6 x 9.6.
+- Both use Draw Mode Sliced, Order in Layer -90, scale 1, and are not children of the `Clearing` objects (those are empty fog markers).
+- Fit rule: the rim line is about 1.5 units in from the sprite edge; top-row trunk roots touch the top rim, bottom-row canopies cover the bottom rim.
+
+Meadow is 9-sliced: `SPR_GroundMeadow` has a 200 px border on all four sides (Sprite Editor), so the bumpy rim corners stay unstretched. Resize a meadow with `Sprite Renderer > Size` or the Rect Tool (T), never Transform scale (scale also scales the corners). Sliced stretches the edges and flowers a bit; Tiled showed seams, so keep Sliced.
 
 Draw order: ground is -100 to -80, shadows -50, grass tufts -40, trunks 5, cow 15, crow 16, canopies 17, fruit 18, fog 19 (translucent, so it tints everything below it), moo text 20, mist wisps 21, motes 22. Ground and grass are always below the animals and the fog.
 
