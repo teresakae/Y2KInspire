@@ -6,7 +6,7 @@ Two animals on one keyboard. The cow (WASD) walks. The crow (arrow keys) flies f
 
 ## Where it lives
 
-- Scripts: `Assets/Scripts/PlayerControl.cs`, one copy on each of `Cow` and `Crow`. `CowRam.cs` goes on `Cow`, `CrowEnergy.cs` on `Crow`.
+- Scripts: `Assets/Scripts/PlayerControl.cs`, one copy on each of `Cow` and `Crow`. `CowRam.cs` goes on `Cow`, `CrowEnergy.cs` on `Crow`. `Water.cs` marks water colliders (river, pond).
 - Scene objects: `Cow` (Rigidbody2D, BoxCollider2D, SpriteRenderer, child `Shadow`) and `Crow` (Rigidbody2D, SpriteRenderer, children `Shadow` and `FlyShadow`).
 - Sprites: `Assets/Sprites/Cow/` (front, back, left, right) and `Assets/Sprites/Crow/` (front, back, left, right, fly).
 - Artist cow sheet: `Assets/Art/Cow/cow and crow_cow.png`, sliced into `cow_front/back/left/right`, `cow_walk_front/back/left/right_0..2` and `cow_crow_head`. Pivot Bottom Center on every slice; front/back slices are 316 px wide, side slices 276 px, so the feet stay put between frames. Hooked up to `Cow`: facing sprites and all four walks (back frames = Walk Up, front frames = Walk Down).
@@ -47,6 +47,8 @@ The cow calls the tree, not the other way round, so there is no collision-callba
 
 `CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it. `IsGrounded` (public) is true when energy is 0 or the Rigidbody2D is standing still, so standing still counts as landed and a tired hopping crow still counts as down. `Snake` reads it, see `snakes.md`.
 
+Drowning: at zero energy, if a collider with a `Water` component (`Water.cs`, an empty marker) is under the crow's position, the crow drowns: input stops, its sprites and bar hide, and after `Drown Delay` seconds the level restarts (same as a snake bite until a lose screen exists). In Level2 `River` and `Pond` have `Water`; the pond's collider has a hole over the island, so a tired crow there is safe.
+
 ## Tuning
 
 On the `PlayerControl` component of each object.
@@ -75,6 +77,8 @@ On the `PlayerControl` component of each object.
 | Ram juice | Cow | CowRam > Dash Stretch / Hit Squash / Hop Time / Hop Speed / Hit Shake / Weak Shake | 1.2 / 0.7 / 0.15 / 5 / 0.3 / 0.04 |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
+| Energy (Level2) | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 |
+| Drowning | Crow | CrowEnergy > Drown Delay | 1.5 |
 | Crow size | Crow | Transform > Scale | 0.5 |
 | Cow collider (feet only) | Cow | BoxCollider2D > Size / Offset | 1.6 x 0.8 / (0, -0.8) |
 | Body type, gravity | Cow, Crow | Rigidbody2D > Body Type / Gravity Scale | Dynamic / 0 |

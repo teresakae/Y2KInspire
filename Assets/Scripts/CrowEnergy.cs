@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
-/// <summary>Crow energy: drains while moving, refilled by fruit; at zero the crow hops slowly.</summary>
+/// <summary>Crow energy: drains while moving, refilled by fruit; at zero the crow hops slowly, or drowns if it is over Water.</summary>
 [RequireComponent(typeof(PlayerControl))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class CrowEnergy : MonoBehaviour
@@ -17,10 +18,14 @@ public class CrowEnergy : MonoBehaviour
     [SerializeField] private Image bar;
     [Tooltip("If the bar's Canvas is World Space, it floats this far above the crow.")]
     [SerializeField] private Vector2 barOffset = new Vector2(0f, 1.2f);
+    [Tooltip("Seconds between drowning (out of energy over Water) and the level restarting.")]
+    [SerializeField] private float drownDelay = 1.5f;
 
     PlayerControl player;
     Rigidbody2D rb;
     float energy;
+    bool drowned;
+    float drownTimer;
 
     void Awake()
     {
@@ -32,10 +37,35 @@ public class CrowEnergy : MonoBehaviour
 
     void Update()
     {
+        if (drowned)
+        {
+            drownTimer -= Time.deltaTime;
+            if (drownTimer <= 0f) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            return;
+        }
         if (rb.linearVelocity.sqrMagnitude > 0.01f) energy -= drainPerSecond * Time.deltaTime;
         energy = Mathf.Clamp(energy, 0f, maxEnergy);
         player.speedScale = energy > 0f ? 1f : tiredSpeedScale;
         if (bar != null) bar.rectTransform.localScale = new Vector3(energy / maxEnergy, 1f, 1f);
+        if (energy <= 0f && OverWater()) Drown();
+    }
+
+    bool OverWater()
+    {
+        foreach (var c in Physics2D.OverlapPointAll(transform.position))
+            if (c.GetComponent<Water>() != null) return true;
+        return false;
+    }
+
+    // Direct restart until a lose screen exists, same as a snake bite.
+    void Drown()
+    {
+        drowned = true;
+        drownTimer = drownDelay;
+        player.enabled = false;
+        rb.linearVelocity = Vector2.zero;
+        foreach (var sr in GetComponentsInChildren<SpriteRenderer>()) sr.enabled = false;
+        if (bar != null) bar.enabled = false;
     }
 
     // The crow spins when it flies, so the bar's Canvas is its own object that just follows.
