@@ -139,10 +139,11 @@ Gimersia Inspire 2026 (Indonesia).
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
 | Win condition | Placeholder: exit fades to white and restarts Level1 once both animals are in it (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
-| Start menu | Script written (`MainMenu`: start, continue, settings, quit). Scene not built yet. | See `menu.md`. |
+| Start menu | Built (`MainMenu`: start, continue, settings, quit). | See `menu.md`. |
 | UI feedback | Not yet | |
 | Level1 | Partial — scene built (camera, fog, clearings, tree walls, fruit tree, exit, HUD). See `level.md`. | Moo text not placed; crow still flies through tree walls. |
-| Level2 | Not yet | |
+| Level2 | Built, untuned: 3x3 screens, river, pond, 16 snakes, 5 fruit trees. See `level.md` "Level2". | Needs a hand-played pass for balance. |
+| Home screen | Built: "You're home." plus Back to menu (`HomeScreen`). See `menu.md`. | |
 | Final art and juice | Not yet | Prototype sprites only. |
 | WebGL build tested | Partial | Built and uploaded to itch.io 18 Nov 2026. Loads in the browser and takes keyboard input; full level not played through there yet. See `README.md` Build (WebGL). |
 | Windows build | Not yet | |

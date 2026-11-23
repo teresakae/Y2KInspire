@@ -33,19 +33,29 @@ public class Snake : MonoBehaviour
     [SerializeField] private float warnRange = 1.5f;
     [Tooltip("Seconds of warning before the crow is eaten.")]
     [SerializeField] private float warnTime = 1f;
+    [Tooltip("Crow within this distance = slither straight at it. 0 = never chase, just roam.")]
+    [SerializeField] private float chaseRange = 0f;
+    [Tooltip("Units per second while chasing the crow.")]
+    [SerializeField] private float chaseSpeed = 2f;
+    [Tooltip("Shown after a strong cow dash kills it (the snake with the X eye). Empty = it vanishes at once.")]
+    [SerializeField] private Sprite dead;
+    [Tooltip("Seconds the dead snake takes to fade out before it is removed.")]
+    [SerializeField] private float deadFadeTime = 1f;
 
     const float arriveDistance = 0.05f;
 
     SpriteRenderer sr;
     Rigidbody2D rb;
+    Collider2D col;
     Vector2 home, target;
-    bool revealed, warning, eaten;
-    float warnTimer, pauseTimer, flipTimer, eatenTimer;
+    bool revealed, warning, eaten, dying;
+    float warnTimer, pauseTimer, flipTimer, eatenTimer, dyingTimer;
 
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
         home = transform.position;
         target = home;
         if (crow == null) Debug.LogError($"{name}: missing Crow");
@@ -57,6 +67,15 @@ public class Snake : MonoBehaviour
 
     void Update()
     {
+        if (dying)
+        {
+            dyingTimer -= Time.deltaTime;
+            Color c = sr.color;
+            c.a = Mathf.Clamp01(dyingTimer / deadFadeTime);
+            sr.color = c;
+            if (dyingTimer <= 0f) Destroy(gameObject);
+            return;
+        }
         if (eaten)
         {
             eatenTimer -= Time.deltaTime;
@@ -88,6 +107,7 @@ public class Snake : MonoBehaviour
     // lose distance on fast screens. Roam here instead.
     void FixedUpdate()
     {
+        if (dying) return;
         if (eaten || !revealed || warning)
         {
             // Restarting the pause means it shows coiled for a beat after being revealed or calming down.
@@ -116,6 +136,15 @@ public class Snake : MonoBehaviour
 
     void Roam()
     {
+        bool chasing = chaseRange > 0f && crow != null && crow.gameObject.activeInHierarchy
+            && Vector2.Distance(rb.position, crow.transform.position) <= chaseRange;
+        if (chasing)
+        {
+            pauseTimer = 0f;
+            Slither(((Vector2)crow.transform.position - rb.position).normalized, chaseSpeed);
+            return;
+        }
+
         if (pauseTimer > 0f)
         {
             Coil();
@@ -132,9 +161,14 @@ public class Snake : MonoBehaviour
             return;
         }
 
-        Vector2 dir = toTarget.normalized;
+        Slither(toTarget.normalized, moveSpeed);
+    }
+
+    void Slither(Vector2 dir, float speed)
+    {
+        Vector2 pos = rb.position;
         if (stretched != null) sr.sprite = stretched;   // empty field would blank the sprite while moving
-        rb.MovePosition(pos + dir * moveSpeed * Time.deltaTime);
+        rb.MovePosition(pos + dir * speed * Time.deltaTime);
         rb.MoveRotation(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + spriteAngle);
 
         flipTimer -= Time.deltaTime;
@@ -151,7 +185,22 @@ public class Snake : MonoBehaviour
 
     void TryDie(Collider2D other)
     {
-        if (!eaten && other.TryGetComponent(out CowRam ram) && ram.IsStrongDash) Destroy(gameObject);
+        if (!eaten && !dying && other.TryGetComponent(out CowRam ram) && ram.IsStrongDash) Die();
+    }
+
+    void Die()
+    {
+        if (dead == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        dying = true;
+        dyingTimer = deadFadeTime;
+        col.enabled = false;
+        sr.sprite = dead;
+        sr.flipX = false;
+        rb.rotation = 0f;
     }
 
     void OnDrawGizmosSelected()
@@ -159,5 +208,6 @@ public class Snake : MonoBehaviour
         Vector3 center = Application.isPlaying ? (Vector3)home : transform.position;
         Gizmos.DrawWireSphere(center, roamRadius);
         Gizmos.DrawWireSphere(transform.position, warnRange);
+        Gizmos.DrawWireSphere(transform.position, chaseRange);
     }
 }

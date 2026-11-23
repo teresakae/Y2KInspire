@@ -82,6 +82,12 @@ public class FogGrid : MonoBehaviour
     [Tooltip("How much regrow speed varies from patch to patch. 0 = every patch refills at the same speed. 1 = the fastest patches refill about 3 times faster than the slowest.")]
     [Range(0f, 1f)]
     [SerializeField] private float regrowSpeedJitter = 0.5f;
+    [Tooltip("Boxes where fog regrows fast (e.g. around a snake's den). Each object's position = box centre, its X and Y scale = box width and height.")]
+    [SerializeField] private Transform[] fastRegrowZones;
+    [Tooltip("Seconds before fog inside a fast zone starts regrowing (replaces Regrow Delay there).")]
+    [SerializeField] private float fastRegrowDelay = 1f;
+    [Tooltip("Fraction of full fog regrown per second inside a fast zone (replaces Regrow Speed there).")]
+    [SerializeField] private float fastRegrowSpeed = 1.5f;
     [SerializeField] private float cowSafeRadius = 0.75f;
     [Tooltip("Width, in units, of the soft ring just outside Cow Safe Radius where fog only regrows part of the way. Stops a hard line where the safe bubble ends. 0 = hard edge.")]
     [SerializeField] private float cowSafeFade = 1f;
@@ -102,6 +108,7 @@ public class FogGrid : MonoBehaviour
     float clearShapeMax;                     // brightest spot of clearShape, so a faint image still clears fully
     float[] maxAlpha;                        // full-fog alpha per pixel (thin puff gaps are lower)
     float[] waitTime;                        // regrowDelay + this pixel's patchy extra wait
+    bool[] inFastZone;                       // pixel centre is inside a fast regrow zone, worked out once in Start
     float[] speedMul;                        // this pixel's regrow speed multiplier (around 1)
 
     void Start()
@@ -120,6 +127,7 @@ public class FogGrid : MonoBehaviour
         maxAlpha = new float[pixels.Length];
         waitTime = new float[pixels.Length];
         speedMul = new float[pixels.Length];
+        inFastZone = new bool[pixels.Length];
         for (int i = 0; i < pixels.Length; i++)
         {
             Color c = fogColor * Mathf.Lerp(thinShade, 1f, look[i]);
@@ -137,7 +145,14 @@ public class FogGrid : MonoBehaviour
                 float k = Mathf.SmoothStep(0f, 1f, Mathf.Max(0f, outside) / thickBorder);
                 maxAlpha[i] = Mathf.Lerp(fogColor.a * 255f, maxAlpha[i], k);
             }
-            waitTime[i] = regrowDelay + Mathf.PerlinNoise(p.x * regrowNoiseScale + 50f, p.y * regrowNoiseScale + 50f) * regrowJitter;   // +50: Perlin repeats near 0
+            if (fastRegrowZones != null)
+            {
+                Vector2 world = origin + p + Vector2.one * (0.5f / pixelsPerUnit);
+                foreach (var z in fastRegrowZones)
+                    if (z != null && Mathf.Abs(world.x - z.position.x) <= z.lossyScale.x / 2f && Mathf.Abs(world.y - z.position.y) <= z.lossyScale.y / 2f)
+                        inFastZone[i] = true;
+            }
+            waitTime[i] = (inFastZone[i] ? fastRegrowDelay : regrowDelay) + Mathf.PerlinNoise(p.x * regrowNoiseScale + 50f, p.y * regrowNoiseScale + 50f) * regrowJitter;   // +50: Perlin repeats near 0
             float speedNoise = Mathf.PerlinNoise(p.x * regrowNoiseScale + 200f, p.y * regrowNoiseScale + 200f);   // other offset: slow patches differ from late patches
             speedMul[i] = Mathf.Lerp(1f - regrowSpeedJitter * 0.5f, 1f + regrowSpeedJitter * 0.5f, speedNoise);
         }
@@ -352,6 +367,7 @@ public class FogGrid : MonoBehaviour
     void Regrow()
     {
         float grow = regrowSpeed * Time.deltaTime;
+        float fastGrow = fastRegrowSpeed * Time.deltaTime;
         int w = tex.width;
 
         // Fog pixels: fade back in towards the rest state, but not in the cow's ragged safe zone.
@@ -373,7 +389,7 @@ public class FogGrid : MonoBehaviour
                     }
                 }
                 if (fog[i] >= target) continue;
-                fog[i] = Mathf.Min(target, fog[i] + grow * speedMul[i]);
+                fog[i] = Mathf.Min(target, fog[i] + (inFastZone[i] ? fastGrow : grow) * speedMul[i]);
                 dirty = true;
             }
 
@@ -408,5 +424,9 @@ public class FogGrid : MonoBehaviour
     {
         Gizmos.color = Color.white;
         Gizmos.DrawWireCube(transform.position, new Vector3(areaSize.x, areaSize.y, 0));
+        Gizmos.color = Color.yellow;
+        if (fastRegrowZones != null)
+            foreach (var z in fastRegrowZones)
+                if (z != null) Gizmos.DrawWireCube(z.position, new Vector3(z.lossyScale.x, z.lossyScale.y, 0));
     }
 }

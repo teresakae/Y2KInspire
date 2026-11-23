@@ -13,12 +13,17 @@ public class Fruit : MonoBehaviour
     [SerializeField] private float bounce = 0.15f;
     [Tooltip("Sprite shown once a falling fruit lands (fruit_cut). Empty = keep the whole fruit.")]
     [SerializeField] private Sprite landedSprite;
+    [Tooltip("Seconds on the ground before it fades away. 0 = stays forever.")]
+    [SerializeField] private float lifetime = 0f;
+    [Tooltip("Seconds the fade-out takes, at the end of the lifetime.")]
+    [SerializeField] private float fadeTime = 1f;
 
     SpriteRenderer sr;
     Collider2D col;
     int groundOrder;
     float groundY, speed;
     bool falling, bounced;
+    float groundTimer;
 
     void Awake()
     {
@@ -38,7 +43,20 @@ public class Fruit : MonoBehaviour
 
     void Update()
     {
-        if (!falling) return;
+        if (!falling)
+        {
+            if (lifetime <= 0f) return;
+            groundTimer += Time.deltaTime;
+            float left = lifetime - groundTimer;
+            if (left <= fadeTime)
+            {
+                Color c = sr.color;
+                c.a = Mathf.Clamp01(left / fadeTime);
+                sr.color = c;
+            }
+            if (left <= 0f) Destroy(gameObject);
+            return;
+        }
         speed += gravity * Time.deltaTime;
         Vector3 p = transform.position;
         p.y -= speed * Time.deltaTime;
