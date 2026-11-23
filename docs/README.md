@@ -7,7 +7,7 @@ One file per system. Each describes how that system works right now, where it li
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy and drowning (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`, `Water.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy, water |
 | trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 and Level2 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`) | Level layout, camera, level start or end, layers and collision matrix |
-| menu.md | Main menu: start, continue, settings (fullscreen, volume), quit, saved level and volume; home screen button (`MainMenu.cs`, `HomeScreen.cs`) | Menu scene, PlayerPrefs saves, build scene order |
+| menu.md | Main menu: start, continue, settings (fullscreen, volume), quit, saved level and volume; opening video; home screen button (`MainMenu.cs`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, PlayerPrefs saves, build scene order |
 | grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
 
@@ -15,7 +15,7 @@ One file per system. Each describes how that system works right now, where it li
 
 1. Unity 6000.6.3f1.
 2. Open `Assets/Level1.unity`.
-3. (Level2: open `Assets/Scenes/Level2.unity`. Build order in `File > Build Profiles`: MainMenu, Level1, Level2, HomeScreen, SampleScene unticked.)
+3. (Level2: open `Assets/Scenes/Level2.unity`. Build order in `File > Build Profiles`: MainMenu, Intro, Level1, Level2, HomeScreen, SampleScene unticked.)
 3. Press Play, then click the Game view so it gets keyboard focus.
 4. WASD moves the cow. Arrow keys move the crow.
 
@@ -25,9 +25,10 @@ One file per system. Each describes how that system works right now, where it li
 |---|---|---|
 | `Assets/Scenes/SampleScene.unity` | Prototype. | No. Listed in `File > Build Profiles > Scene List` but unticked. |
 | `Assets/Scenes/MainMenu.unity` | Start menu. See menu.md. | Yes, index 0. |
-| `Assets/Level1.unity` | First level: the misty look from `FogTest_Mist` (Sandbox copy kept). Exit loads Level2. See level.md. | Yes, index 1. |
-| `Assets/Scenes/Level2.unity` | Second level "The Pond": 3x3 screens, river, pond, snakes. Exit loads HomeScreen. See level.md. | Yes, index 2. |
-| `Assets/Scenes/HomeScreen.unity` | "You're home." end screen with a Back to menu button. See menu.md. | Yes, index 3. |
+| `Assets/Scenes/Intro.unity` | Opening video, then Level1. See menu.md. | Yes, index 1. |
+| `Assets/Level1.unity` | First level: the misty look from `FogTest_Mist` (Sandbox copy kept). Exit loads Level2. See level.md. | Yes, index 2. |
+| `Assets/Scenes/Level2.unity` | Second level "The Pond": 3x3 screens, river, pond, snakes. Exit loads HomeScreen. See level.md. | Yes, index 3. |
+| `Assets/Scenes/HomeScreen.unity` | "You're home." end screen with a Back to menu button. See menu.md. | Yes, index 4. |
 
 Root objects in SampleScene:
 

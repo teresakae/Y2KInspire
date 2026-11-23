@@ -2626,7 +2626,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 842dc843b869849cabc7c9eb61d5ad12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
-  firstLevel: Level1
+  firstLevel: Intro
   continueButton: {fileID: 684854236}
   exitButton: {fileID: 1597139087}
   settingsPanel: {fileID: 1002050759}

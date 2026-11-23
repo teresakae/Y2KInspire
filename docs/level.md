@@ -138,12 +138,12 @@ Layout (world coordinates):
 | Part | Where | Objects |
 |---|---|---|
 | Start clearing | (-6, -0.2), radius 4 | `Ground > Meadow_Start`; `Clearing` marker is the only `Fog Grid > Open At Start`. Cow (-7, -1), crow (-4.8, 0.2). |
-| Fork clearing | (6.3, -5.1), radius 5 | `Ground > Meadow_Fork`, `Tree_Fork` in the middle |
+| Fork clearing | (7.3, -5.1), round meadow 7.1 across | `Ground > Meadow_Fork`, `Tree_Fork` in the middle |
 | Fruit clearing A | (25.5, -1.2), round meadow 7.1 across | `Ground > Meadow_FruitA`, `Tree_FruitA` in the middle |
 | Fruit clearing B | (40.5, -9.5), radius 4.5 | `Ground > Meadow_FruitB`, `Tree_FruitB` in the middle |
-| Meeting clearing | (19, -17.5), radius 5.5 | `Ground > Meadow_Meeting`, `Tree_Meeting` in the middle |
-| Pond | oval 14.8 x 10.8 at (19.5, -8.3) | `Ground > Pond`, `Ground > PondMask` |
-| Island | (19.5, -8.3), radius 1.5 | `Ground > Island`, `Fruit_Island` (PF_Fruit, lifetime 0) |
+| Meeting clearing | (21.8, -17.8), round meadow 7.1 across | `Ground > Meadow_Meeting`, `Tree_Meeting` in the middle, centred in the junction of the west, east and south paths |
+| Pond | blob about 9.2 x 9.4 at (19.5, -8.3) | `Ground > Pond` (collider), `Ground > PondWater` (art) |
+| Island | (19.5, -8.3), about 3.3 across | `Ground > Island`, `Fruit_Island` (PF_Fruit, lifetime 0) |
 | Exit | (44.5, -29), trigger 8 x 1.4 on the bottom edge | `Exit` |
 | River | one piece over the whole map, 65 x 40.3 at (18.5, -13.85) | `Ground > River` |
 
@@ -152,8 +152,8 @@ Paths are plain dark ground, like Level1: meadow only at the clearings, the tree
 Ground pieces:
 - `River`: `SPR_GroundPond` (land inside water), Draw Mode Sliced, border 320 px on all sides (set in the Sprite Editor), order -95. Its top and right water bands show; past its right edge (x 51) the dark `GroundFill` reads as forest beyond the river. Two BoxCollider2D on it (top band 65 x 1.6, right band 1.6 x 40.3) and a `Water` component.
 - Clearings: `SPR_GroundMeadowRound`, Sliced, size 2 x radius + 2 (so the rim sits under the ring of trees), order -90.
-- `Pond`: `SPR_GroundPuddle` at Draw Mode Simple, scaled to 14.8 x 10.8, order -88, `Mask Interaction` Visible Inside Mask. `PondMask` is a Sprite Mask using Unity's built-in round `Knob` sprite scaled to the same oval, so the tile's square corners are cut off. A PolygonCollider2D with two paths: an oval 0.5 inside the rim (blocks the cow) and a hole of radius 1.5 over the island, so a crow landing on the island is not over water. A `Water` component.
-- `Island`: `SPR_GroundPond` at Simple, scale 0.3 (land in water, blends into the pond), order -85.
+- `Pond`: holds the `Water` component and the PolygonCollider2D (scale 1, not a trigger, Default layer, so it blocks the cow and marks water for the crow). Path 0 is the traced outline of the puddle art, 0.2 inside the visible rim; path 1 is a hole of radius 1.6 over the island. The art is the separate object `Ground > PondWater` (not a child, so Pond keeps scale 1): `SPR_GroundPuddle`, Draw Mode Simple, uniform scale 3.2, order -88. Uniform scale keeps the artist's outline from thickening; the 9-slice option (border 140 already set) stretched into a rounded box, and the old 5x / 3.7x stretch made a thick dark ring. If you resize it, scale X and Y the same, then re-trace the collider.
+- `Island`: `Assets/Sprites/SPR_IslandPatch.png`, Simple, uniform scale 0.63, order -85. It is a copy of the tileset's `SPR_GroundMeadowRound` with the square ground-coloured corners made see-through, so only the scalloped patch shows over the water. Not a SpriteMask: `MistMask` adds an unbounded SpriteMask in Play, which makes other masks show square corners.
 
 Trees (`Walls`, 76 `WallTree` instances, scale 1): each tree's collider is a circle r 1.4 at 1.3 below the tree's position, and its canopy reaches about 6.4 above that collider. Placement rules:
 1. Trunk collider centres sit 4.9 from the path centreline (3.5 half-width + 1.4), 2.4 apart along the line, so neighbours touch: no gap that looks open but isn't.
@@ -186,7 +186,7 @@ Tuning (Level2 values):
 | Exit target | Exit | LevelExit > Next Scene | HomeScreen |
 | Motes box | Motes | Particle System > Shape > Scale / Emission | (66, 38) / 35 per s, max 240 |
 
-Reshaping by hand: move trees in pairs along a line and keep trunks touching (2.4 apart at scale 1). After moving trees, walk the cow through every bend in Play mode. A south-side tree closer than 4.4 below a path hides the path under its canopy. Moving the pond: move `Pond`, `PondMask`, `Island` and `Fruit_Island` together, and check the gap by `Tree_PondSeal0`.
+Reshaping by hand: move trees in pairs along a line and keep trunks touching (2.4 apart at scale 1). After moving trees, walk the cow through every bend in Play mode. A south-side tree closer than 4.4 below a path hides the path under its canopy. Moving the pond: move `Pond`, `PondWater`, `Island` and `Fruit_Island` together, and check the gap by `Tree_PondSeal0` (the pond is smaller than in v4, so that gap is wider now; the cow still cannot pass it).
 
 Not done / check by hand: snake balance is unplayed; energy at 4 per second is a guess; a full walk-through to the exit and the HomeScreen button has not been done in Play mode.
 
@@ -205,6 +205,7 @@ Decoration only, no colliders, no scripts:
 ### Level2
 - `TreeClearings` (root) holds `Clearing_TreeFork`, `_TreeFruitA`, `_TreeFruitB`, `_TreeMeeting` at the four meadow centres, X scale 14, all in `Fog Grid > Open At Start` after `Clearing`.
 - `Ground > Meadow_Fork`, `_FruitA`, `_FruitB`, `_Meeting`: now `SPR_GroundMeadowRound`, Draw Mode Simple, scale 1.4 (round, about 7.1 across), order -90. `Meadow_Start` unchanged. 12 grass tufts moved inside the new circles (radius 2 from the tree).
-- Pond: `Ground > Pond` keeps its scale (5.17, 3.69) and the collider and `Water`. Its sprite is gone; the child `PondWater` draws `Assets/Sprites/SPR_Circle.png` (a plain white circle copied from the 2D Sprite package) scaled to 14.8 x 10.8, colour the River's water blue, order -88. `PondMask` is deleted: the fog mist (`MistMask`) adds a mask without a range at Play, which made masked sprites show their square corners.
-- `Ground > Island`: `SPR_Circle` 3.2 across in the dark ground colour with a child `IslandGrass` (0.88 of that) in the meadow colour, orders -85 and -84. `Fruit_Island` unchanged.
+- Pond and island: see the Pond and Island lines under "Ground pieces". `PondMask` and the plain `SPR_Circle` pond/island shapes are gone; `SPR_Circle.png` is now only used by the shadows.
+- Tree positions moved to centre them on the paths: `Tree_Fork`, `Clearing_TreeFork`, `Meadow_Fork` and its 3 tufts moved +1.0 in X (clearing now (7.3, -5.1)). `Tree_Meeting`, `Clearing_TreeMeeting`, `Meadow_Meeting` and its 3 tufts moved by (+2.8, -0.3) (clearing now (21.8, -17.8), the middle of the three paths).
+- Clip fix: the permanent fog clearing is 7 units in radius, bigger than the wall ring, so gaps between wall trunks that fog used to fill are open there. `Walls > Tree_PatchFruitB` (WallTree, (33.9, -7.4)) closes a 0.95 slit between `Tree_36` and `Tree_68` on the west side of the FruitB clearing, which let the cow into the forest behind the trees. Still-open slits outside any permanent clearing (fog covers them until the crow clears it): `Tree_0`/`Tree_62` (0.9), `Tree_8`/`Tree_9` (1.7), `Tree_17`/`Tree_18` and `Tree_64` (1.5 to 1.75).
 - Checked: cow box reaches the exit through the short branch alone and the long branch alone; not with both cut.

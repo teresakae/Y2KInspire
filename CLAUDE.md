@@ -80,6 +80,7 @@ Gotchas (add a line every time a call fails for a non-obvious reason):
 - The server is only up after Start Server in the Unity window; `ECONNREFUSED` on 127.0.0.1:8080 means it isn't running.
 - `execute_code` compiles with CodeDom (C# 6): no local functions, no `is X x` patterns. Use lambdas (`System.Func`) instead.
 - `manage_camera` screenshot `output_folder` must be inside the project: use `Library/Captures` (not imported, not in git).
+- Scene edits through `execute_code` don't mark the scene dirty, so `SaveOpenScenes()` silently skips them. Call `EditorSceneManager.MarkSceneDirty(scene)` before saving.
 
 ## 8. Project map
 
@@ -87,8 +88,8 @@ Versions: Unity 6000.6.3f1; URP 17.6.0 (2D Renderer); Input System 1.20.0; uGUI 
 
 ```
 Assets/
-  Level1.unity at the Assets root for now; the only scene in the build
-  Scenes/      SampleScene.unity = the prototype, not in build
+  Level1.unity at the Assets root for now
+  Scenes/      MainMenu, Intro, Level2, HomeScreen (build order: MainMenu, Intro, Level1, Level2, HomeScreen); SampleScene = the prototype, not in build
   Scripts/     FogGrid.cs, PlayerControl.cs
   Shaders/     FogSwirl.shader, GrassSway.shader
   Materials/   M_FogSwirl, M_MoteGlow, M_GrassSway

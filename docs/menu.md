@@ -4,12 +4,12 @@ Status: script and scene are built. Build index 0. Feel and art not tuned.
 
 ## What it is
 
-The first screen. A title and a column of buttons: Start, Continue, Settings, Exit. Start begins Level1. Continue resumes the last level the players reached; it only shows if a save exists. Settings opens a panel with a controls card, a fullscreen toggle, a volume slider and a Back button. Exit quits the game and is hidden on WebGL.
+The first screen. A title and a column of buttons: Start, Continue, Settings, Exit. Start plays the opening video (Intro scene), then Level1. Continue resumes the last level the players reached; it only shows if a save exists. Settings opens a panel with a controls card, a fullscreen toggle, a volume slider and a Back button. Exit quits the game and is hidden on WebGL.
 
 ## Where it lives
 
 - Script: `Assets/Scripts/MainMenu.cs`, on the menu Canvas.
-- Scene: `Assets/Scenes/MainMenu.unity`. Must be build index 0 (it is: MainMenu, Level1, SampleScene off).
+- Scene: `Assets/Scenes/MainMenu.unity`. Must be build index 0 (order: MainMenu, Intro, Level1, Level2, HomeScreen, SampleScene off).
 - Save written by `LevelExit` (see `level.md`) when both animals reach an exit with a `Next Scene`.
 
 ## How it works
@@ -26,6 +26,27 @@ PlayerPrefs keys:
 | `Volume` | float 0-1 | `MainMenu.SetVolume` | Master volume. Default 1. |
 
 Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist otherwise. To reset the save while testing: `Edit > Clear All PlayerPrefs`.
+
+## Intro (opening video)
+
+`Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `MainMenu > First Level` is `Intro`, so Start goes here; Continue skips it and loads the saved level.
+
+- Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
+- When the video ends, or any key or left click is pressed, it loads `Intro > Next Scene` (default `Level1`). If the video fails to load it logs an error and loads Level1 straight away.
+- The camera background is white, so letterbox bars match the video's white frames.
+
+| What | Field | Value |
+|---|---|---|
+| Video file | `Main Camera > Intro > File Name` | `intro_white.mp4` |
+| Scene after | `Main Camera > Intro > Next Scene` | `Level1` |
+
+Gotchas:
+- The video must stay in `Assets/StreamingAssets`: WebGL can only play video from a URL, not from a VideoClip asset. Everything in that folder ships in the build as-is, so keep source art out of it. The 18 opening illustration PNGs live in `Assets/Art/Cutscene` for that reason; nothing uses them.
+- The editor only advances Play mode while Unity has focus, so check the video by clicking into the Game view.
+
+## Home screen
+
+`Assets/Scripts/HomeScreen.cs` is on the Canvas of `Assets/Scenes/HomeScreen.unity` (build index 4, reached from Level2's exit). Field `Menu Scene` (default `MainMenu`). One public method, `BackToMenu()`, loads it; wire it to the scene's button OnClick. It leaves `PlayerPrefs` alone, so Continue still works. The scene must be in `File > Build Profiles`.
 
 ## Public methods
 
@@ -71,3 +92,24 @@ All `MainMenu` fields and OnClick / On Value Changed lists are wired. Buttons us
 - Menu art (buttons are the default UI sprite).
 - Volume routed to an FMOD bus.
 - A way to start over after Continue shows (no "reset save" button).
+
+## Intro (opening video)
+
+`Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `MainMenu > First Level` is `Intro`, so Start goes here; Continue skips it and loads the saved level.
+
+- Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
+- When the video ends, or any key or left click is pressed, it loads `Intro > Next Scene` (default `Level1`). If the video fails to load it logs an error and loads Level1 straight away.
+- The camera background is white, so letterbox bars match the video's white frames.
+
+| What | Field | Value |
+|---|---|---|
+| Video file | `Main Camera > Intro > File Name` | `intro_white.mp4` |
+| Scene after | `Main Camera > Intro > Next Scene` | `Level1` |
+
+Gotchas:
+- The video must stay in `Assets/StreamingAssets`: WebGL can only play video from a URL, not from a VideoClip asset. Everything in that folder ships in the build as-is, so keep source art out of it. The 18 opening illustration PNGs live in `Assets/Art/Cutscene` for that reason; nothing uses them.
+- The editor only advances Play mode while Unity has focus, so check the video by clicking into the Game view.
+
+## Home screen scene
+
+Copied from MainMenu and stripped. Camera solid cream #FBEBD6. Canvas (Overlay, 1920x1080, `HomeScreen` script). `Title` "You're home." (plum #2E1A2B, 120), `Subtitle` "The calf is back with the herd." (plum, 56), `Buttons > BackButton` "Back to menu" (plum button, peach text) with OnClick = `HomeScreen.BackToMenu`. Layout is anchors (title and subtitle at 62% height) and the Buttons Vertical Layout Group. Level2's exit (`LevelExit > Next Scene` = "HomeScreen") loads it; it also writes `SavedLevel` = HomeScreen, so Continue then opens the home screen (clear PlayerPrefs, or change this later).
