@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BobAmp: 0.08
+    - _BobAmp: 0.16
     - _BobSpeed: 1.5
     - _Phase: 0.8
     - _ScaleAmp: 0

@@ -34,7 +34,7 @@ Material:
     - _Phase: 0
     - _ScaleAmp: 0
     - _ScaleSpeed: 1
-    - _TiltDeg: 0.3
+    - _TiltDeg: 0.6
     - _TiltSpeed: 0.35
     - _WobbleAmp: 0
     - _WobbleScale: 6

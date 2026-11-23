@@ -29,14 +29,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BobAmp: 0.18
+    - _BobAmp: 0.35
     - _BobSpeed: 1.2
     - _Phase: 0
     - _ScaleAmp: 0
     - _ScaleSpeed: 1
     - _TiltDeg: 0
     - _TiltSpeed: 1
-    - _WobbleAmp: 0.004
+    - _WobbleAmp: 0.008
     - _WobbleScale: 6
     - _WobbleSpeed: 0.6
     m_Colors: []

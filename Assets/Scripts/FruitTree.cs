@@ -19,15 +19,19 @@ public class FruitTree : MonoBehaviour
     [SerializeField] private float shakeTime = 0.2f;
     [Tooltip("How fast the canopy wobbles.")]
     [SerializeField] private float shakeSpeed = 40f;
+    [Tooltip("Seconds after a hanging fruit is picked before it grows back on the canopy. 0 = never.")]
+    [SerializeField] private float regrowTime = 20f;
 
     Vector3 basePos;
     float nextHit, shakeTimer;
+    float[] regrowAt;   // time each hanging fruit is due back, parallel to hangingFruit; 0 = not waiting
 
     void Start()
     {
         if (fruitPrefab == null) Debug.LogError($"{name}: missing Fruit Prefab");
         if (shakeTarget == null) shakeTarget = transform;
         basePos = shakeTarget.localPosition;
+        regrowAt = new float[hangingFruit == null ? 0 : hangingFruit.Length];
     }
 
     public void Hit()
@@ -49,16 +53,30 @@ public class FruitTree : MonoBehaviour
     }
 
     // Hides the next hanging fruit and returns it. Null when none are left.
-    // ponytail: fruit never grows back; add a regrow timer if players can run out and get stuck.
     GameObject TakeHangingFruit()
     {
-        foreach (var f in hangingFruit)
-            if (f != null && f.activeSelf) { f.SetActive(false); return f; }
+        for (int i = 0; i < hangingFruit.Length; i++)
+        {
+            GameObject f = hangingFruit[i];
+            if (f != null && f.activeSelf)
+            {
+                f.SetActive(false);
+                if (regrowTime > 0f) regrowAt[i] = Time.time + regrowTime;
+                return f;
+            }
+        }
         return null;
     }
 
     void Update()
     {
+        for (int i = 0; i < regrowAt.Length; i++)
+            if (regrowAt[i] > 0f && Time.time >= regrowAt[i])
+            {
+                regrowAt[i] = 0f;
+                if (hangingFruit[i] != null) hangingFruit[i].SetActive(true);
+            }
+
         if (shakeTimer <= 0f) return;
         shakeTimer -= Time.deltaTime;
         if (shakeTimer > 0f) shakeTarget.localPosition = basePos + Vector3.right * Mathf.Sin(Time.time * shakeSpeed) * shakeAmount;

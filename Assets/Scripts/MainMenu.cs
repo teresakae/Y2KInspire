@@ -3,17 +3,15 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Main menu: start, continue from the saved level, settings panel (fullscreen, volume), quit.
+/// Main menu: Start resumes the saved level (or the first scene), settings panel (fullscreen, volume), credits.
 /// Buttons call the public methods through their OnClick lists in the Inspector.
 /// </summary>
 public class MainMenu : MonoBehaviour
 {
-    [Tooltip("Scene loaded by Start. Must be in File > Build Profiles scene list.")]
+    [Tooltip("Scene loaded by Start when there is no save. Must be in File > Build Profiles scene list.")]
     [SerializeField] private string firstLevel = "Level1";
-    [Tooltip("Continue button object. Hidden when there is no save.")]
-    [SerializeField] private GameObject continueButton;
-    [Tooltip("Exit button object. Hidden on WebGL, where Quit does nothing.")]
-    [SerializeField] private GameObject exitButton;
+    [Tooltip("Name of the end scene. LevelExit saves the next scene, so a finished game saves this; Start then begins again instead of resuming it.")]
+    [SerializeField] private string endScene = "HomeScreen";
     [Tooltip("Settings panel. Inactive in the scene.")]
     [SerializeField] private GameObject settingsPanel;
     [Tooltip("Fullscreen toggle inside the settings panel.")]
@@ -23,16 +21,10 @@ public class MainMenu : MonoBehaviour
 
     void Start()
     {
-        if (continueButton == null) Debug.LogError($"{name}: missing continueButton");
-        if (exitButton == null) Debug.LogError($"{name}: missing exitButton");
         if (settingsPanel == null) Debug.LogError($"{name}: missing settingsPanel");
         if (fullscreenToggle == null) Debug.LogError($"{name}: missing fullscreenToggle");
         if (volumeSlider == null) Debug.LogError($"{name}: missing volumeSlider");
-        if (continueButton == null || exitButton == null || settingsPanel == null
-            || fullscreenToggle == null || volumeSlider == null) return;
-
-        continueButton.SetActive(PlayerPrefs.HasKey("SavedLevel"));
-        if (Application.platform == RuntimePlatform.WebGLPlayer) exitButton.SetActive(false);
+        if (settingsPanel == null || fullscreenToggle == null || volumeSlider == null) return;
 
         // WithoutNotify: setting the UI must not fire the OnValueChanged saves below
         fullscreenToggle.SetIsOnWithoutNotify(Screen.fullScreen);
@@ -43,12 +35,9 @@ public class MainMenu : MonoBehaviour
 
     public void StartGame()
     {
-        SceneManager.LoadScene(firstLevel);
-    }
-
-    public void ContinueGame()
-    {
-        SceneManager.LoadScene(PlayerPrefs.GetString("SavedLevel", firstLevel));
+        string saved = PlayerPrefs.GetString("SavedLevel", "");
+        if (saved != "" && saved != endScene) SceneManager.LoadScene(saved);
+        else SceneManager.LoadScene(firstLevel);
     }
 
     public void OpenSettings()
@@ -59,11 +48,6 @@ public class MainMenu : MonoBehaviour
     public void CloseSettings()
     {
         settingsPanel.SetActive(false);
-    }
-
-    public void QuitGame()
-    {
-        Application.Quit();
     }
 
     public void SetFullscreen(bool on)

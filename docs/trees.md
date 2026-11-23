@@ -15,8 +15,9 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 ## How it works
 
 1. The cow dashes into the tree's collider. `CowRam` checks its charge and calls `FruitTree.Hit(charge)`.
-2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. If `Hanging Fruit` has entries, each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. If `Hanging Fruit` is empty, the fruit falls from the trunk centre instead (unlimited drops). When all are hidden the tree only shakes and drops nothing. Hanging fruit never regrows.
+2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. If `Hanging Fruit` has entries, each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. If `Hanging Fruit` is empty, the fruit falls from the trunk centre instead (unlimited drops). When all are hidden the tree only shakes and drops nothing. A hidden hanging fruit grows back on the canopy `Regrow Time` seconds after it was picked (`FruitTree.Update` checks a due time per fruit).
 3. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
+3b. If `Fruit > Lifetime` is above 0, a timer starts once the fruit is on the ground (after landing if it fell, from the first frame if placed on the ground). Over the last `Fade Time` seconds its sprite alpha drops to 0, then it is destroyed. 0 = stays forever.
 4. The crow touches the fruit's trigger: `Fruit` calls `CrowEnergy.Eat(Energy)` and destroys itself. The cow's touch is ignored.
 
 ## Adding a tree
@@ -49,10 +50,13 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 | Drop distance below trunk centre | Tree | FruitTree > Drop Below | 2 (default; trunk `_4` is about 3.1 tall, so its base is 1.55 below) |
 | Dropped fruit look | PF_Fruit | Sprite Renderer > Sprite | `fruit_cut` (hanging fruit keep `fruit`) |
 | Time between hits | Tree | FruitTree > Cooldown | 0.5 (default) |
+| Hanging fruit regrow | Tree | FruitTree > Regrow Time | 20 seconds (default, all trees including PF_Fruit and PF_FruitQuick ones; 0 = never) |
 | Canopy to shake | Tree | FruitTree > Shake Target | Canopy |
 | Trunk collider | Tree | BoxCollider2D > Size / Offset | (2.2, 0.6) / (0.03, 0.3) |
 | Shake size, length, speed | Tree | FruitTree > Shake Amount / Shake Time / Shake Speed | 0.1 / 0.2 / 40 (defaults) |
 | Energy per fruit | PF_Fruit | Fruit > Energy | 30 (default) |
+| Seconds on ground before it fades | PF_Fruit | Fruit > Lifetime | 0 (default = stays forever) |
+| Fade-out length (s) | PF_Fruit | Fruit > Fade Time | 1 (default) |
 | Min charge to drop | Cow | CowRam > Min Charge | 0.5 (default) |
 | Sway (trunk / canopy / hanging fruit) | materials | `M_TreeTrunk`, `M_TreeCanopy`, `M_TreeFruit` > Sway amount / Base sway / Wind lean / Wave scale / Wave speed / Flutter | trunk 0.024 / 0 / 0.12; canopy 0.06 / 0.4 / 0.3; fruit 0.03 / 1 / 0.15; shared 0.6 / 1.0 / 0.15 |
 
@@ -67,7 +71,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 ## Not built yet
 
-- Hanging fruit never regrows. A tree with `Hanging Fruit` set gives only that many fruit, ever. Option: re-show them on a timer.
+- Regrow is per fruit: ramming a tree twice hides two, and each comes back on its own timer. The dropped fruit on the ground is separate (`Fruit > Lifetime`).
 - Fruit never rots or despawns.
 
 ## Sway

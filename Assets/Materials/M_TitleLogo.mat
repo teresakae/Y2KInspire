@@ -32,9 +32,9 @@ Material:
     - _BobAmp: 0
     - _BobSpeed: 1
     - _Phase: 0
-    - _ScaleAmp: 0.015
+    - _ScaleAmp: 0.03
     - _ScaleSpeed: 1.3
-    - _TiltDeg: 1
+    - _TiltDeg: 2
     - _TiltSpeed: 0.9
     - _WobbleAmp: 0
     - _WobbleScale: 6

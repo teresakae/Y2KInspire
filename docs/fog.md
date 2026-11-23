@@ -52,7 +52,7 @@ All on `Fog Grid > Fog Grid`.
 | Who fog won't grow under | Fog Grid | Cow | Cow |
 | Start and tree clearings | Fog Grid | Open At Start | Level1: Clearing, Clearing2. Level2: Clearing, TreeClearings > Clearing_TreeFork, _TreeFruitA, _TreeFruitB, _TreeMeeting |
 | Fog area in units | Fog Grid | Area Size | 45.6 x 14.4 in Level1 (covers both screens, camera size 6, with margin) |
-| Crow's hole radius | Fog Grid | Clear Radius | 2 in Level1 (script default 0.75). With fog.png and the default `Clear Falloff`, the walkable part is about 1.34 x this, so 2 gives about 2.7 units walkable. The cow's feet collider is 1.6 wide and 0.8 tall, so there is plenty of room. Shrink the curve or the shape a lot and the cow stops fitting. |
+| Crow's hole radius | Fog Grid | Clear Radius | 3 in Level1 (was 2; script default 0.75). With fog.png and the default `Clear Falloff`, the walkable part is about 1.34 x this, so 3 gives about 4 units walkable. The cow's feet collider is 1.6 wide and 0.8 tall; 2 left a path of about 2.7 and the cow caught on fog colliders at the edges, so the path is now at least 1.5 x the collider's long side. Shrink the curve or the shape a lot and the cow stops fitting. |
 | Crow's hole shape | Fog Grid | Clear Shape | fog.png (empty = round) |
 | How much each ring clears (cloud hole) | Fog Grid | Clear Falloff | not set up yet (default curve: 1 to 0.5, 0.6 at 0.7, 0.3 at 0.85, 0 at 1) |
 | Soft edge width (round hole only) | Fog Grid | Edge Softness | 0.2 |
@@ -60,12 +60,12 @@ All on `Fog Grid > Fog Grid`.
 | Wobbles per unit | Fog Grid | Edge Noise Scale | 2 (higher = wispier) |
 | Fog look resolution | Fog Grid | Pixels Per Unit | 16 |
 | Blocking resolution | Fog Grid | Cell Size | 0.25 |
-| Fog colour | Fog Grid | Fog Color | (0.93, 0.95, 0.98, 0.85), a cool white; alpha is the see-through amount (script default white, alpha 1) |
+| Fog colour | Fog Grid | Fog Color | Level1 (0.93, 0.95, 0.98, 1.0), a cool white (was alpha 0.7); alpha is the see-through amount (script default white, alpha 1) |
 | Cloud images | Fog Grid | Puff Textures | fog.png (empty = flat colour) |
 | Number of puffs | Fog Grid | Puff Count | 94 in Level1 (keeps density over the bigger area) |
 | Puff size in units | Fog Grid | Puff Size Range | 3 to 6 |
 | Thinnest fog brightness | Fog Grid | Thin Shade | 0.85 (lower = stronger cloud shapes) |
-| Thinnest fog thickness | Fog Grid | Thin Alpha | 0.7 (1 = even) |
+| Thinnest fog thickness | Fog Grid | Thin Alpha | 1 in Level1, so the fog is even and fully thick (was 0.45; 1 = even) |
 | Thick fog around start clearings (units) | Fog Grid | Thick Border | 2.5 (0 = off). Fog within this distance outside an `Open At Start` circle (centre distance minus half X scale) keeps full alpha (`Fog Color` alpha), blending smoothly back to normal thin fog over the band. Looks only. The shader's breathe still thins it a little |
 | Cloud softness (units) | Fog Grid | Look Blur | 0.75 (0 = sharp puff edges) |
 | Puff layout | Fog Grid | Seed | 0 |
@@ -117,12 +117,12 @@ To tweak: select `M_FogSwirl` in `Assets/Materials` and change its properties. C
 | Edge breakup (`_EdgeBreak`) | 0.8 | How patchy the thinning zone is. 0 = smooth gradient, higher = more uneven thin mist (too high starts to look like blobs) |
 | Body roll (`_BodyShade`) | 0.12 | How much the colour darkens in slow patches. 0 = flat colour |
 
-Gotcha: `_FullAlpha` is a copy of `Fog Color` alpha, not read from it. Change one, change the other.
+Gotcha: `_FullAlpha` is a copy of `Fog Color` alpha, not read from it. Change one, change the other. `M_FogSwirl` is shared with Level2, so Level1 keeps `_FullAlpha` 0.85 while its `Fog Color` alpha is 1; the only effect is that the thinning noise starts a little earlier in the ramp.
 
 ## Gotchas
 
 - A hole stamp slid along a path makes a straight edge wherever the stamp has a wide flat shelf (the top of `fog.png` did; the bottom had a narrow lobe, so it looked bumpy). Cause was the identical stamp, not a flipped texture. Fixed by turning each stamp by noise of its position (`turn` in `Clear`).
-- Straight vertical/horizontal lines around the start clearings are not fog. `Meadow1` / `Meadow2` use the artist's `SPR_GroundMeadow` (from `Assets/Art/Ground/cow and crow tileset.png`), which has an opaque darker-green square rim (RGB about 140,156,72) outside the scalloped edge, against the lighter `GroundFill` (155,175,94). Fog only makes that square rim easier to see. Fix: `Assets/Sandbox/SPR_GroundMeadow_NoRim.png` (still in Sandbox, Level1 does not use it) is the same sprite with the rim made transparent (verified in Play); set it as `Meadow1/2 > Sprite Renderer > Sprite`, or ask the artist for a rim-free tile.
+- Straight vertical/horizontal lines around the start clearings were not fog: the artist's `SPR_GroundMeadow` has an opaque darker-green square rim. Level1's `Meadow1` / `Meadow2` now use `Assets/Sprites/SPR_IslandPatch.png` (round, transparent corners), so no square shows.
 
 - The cow can only walk where `Clear Falloff` removes more than half the fog (`Reveal Threshold` 0.5). Thin-fog outer rings look open but still block the cow.
 

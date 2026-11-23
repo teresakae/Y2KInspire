@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 
-/// <summary>Plays the opening video, then loads the first level. Any key or click skips it.</summary>
+/// <summary>Plays the opening video, then loads the first level. Any key, or the Skip button, skips it.</summary>
 [RequireComponent(typeof(VideoPlayer))]
 public class Intro : MonoBehaviour
 {
@@ -29,11 +29,11 @@ public class Intro : MonoBehaviour
     void Update()
     {
         bool key = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
-        bool click = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-        if (key || click) Leave();
+        if (key) Leave();
     }
 
-    void Leave()
+    // The Skip button calls this (After Pop).
+    public void Leave()
     {
         if (leaving) return;
         leaving = true;

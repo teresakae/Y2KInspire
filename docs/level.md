@@ -80,9 +80,9 @@ Replacing the tileset png resets its slices. Scenes and prefabs reference a spri
 
 Scene objects, all under the root `Ground` at (0, 0, 0):
 - `GroundFill`: SpriteRenderer, `SPR_GroundDarkFill` (same dark green as the meadow margin, so meadow edges have no visible square), Draw Mode Tiled, Size 44 x 13, position (10.7, 0), Order in Layer -100.
-- `Meadow1` at (3.55, -0.35), size 10.5 x 7.5.
-- `Meadow2` at (21.63, 0.38), now `SPR_GroundMeadowRound`, Draw Mode Simple, scale 1.4 (round, about 7.4 across, centred on the fruit tree's collider centre).
-- Both use Draw Mode Sliced, Order in Layer -90, scale 1, and are not children of the `Clearing` objects (those are empty fog markers).
+- `Meadow1` at (4.64, -0.30), `SPR_IslandPatch`, Draw Mode Simple, scale 0.8 (round, about 5 across).
+- `Meadow2` at (21.63, 0.38), `SPR_IslandPatch`, Draw Mode Simple, scale 1.2 (round, about 7.4 across, centred on the fruit tree's collider centre).
+- Both: Order in Layer -90, not children of the `Clearing` objects (those are empty fog markers). `SPR_IslandPatch` is the round meadow tile with transparent corners, so no square shows (Level1 only; Level2's clearings still use `SPR_GroundMeadowRound`).
 - Fit rule: the rim line is about 1.5 units in from the sprite edge; top-row trunk roots touch the top rim, bottom-row canopies cover the bottom rim.
 
 Meadow is 9-sliced: `SPR_GroundMeadow` has a 200 px border on all four sides (`SPR_GroundMeadowRound` 150 px) (Sprite Editor), so the bumpy rim corners stay unstretched. Resize a meadow with `Sprite Renderer > Size` or the Rect Tool (T), never Transform scale (scale also scales the corners). Sliced stretches the edges and flowers a bit; Tiled showed seams, so keep Sliced.
@@ -110,7 +110,7 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 | Fade length (s) | Exit | LevelExit > Fade Time | 1.5 |
 | Next level | Exit | LevelExit > Next Scene | Level1: `Level2`. Level2: `HomeScreen` |
 | Fog area / position / puffs / start clearings | Fog Grid | see `fog.md` | 48 x 24 at (12.2, -1.4), 2 clearings |
-| Crow energy (Level1) | Crow | CrowEnergy > Drain Per Second | 35 |
+| Crow energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 |
 
 ## Gotchas
 
@@ -199,8 +199,11 @@ Decoration only, no colliders, no scripts:
 - Both were scattered by a one-off script through the bridge, not by hand; delete a parent to remove it. Moving the paths means re-scattering.
 
 ### Level1
+- Start area (23 Nov): wall trees moved straight up or down (away from the patch, rows keep their x) until their collider and sprites clear the round patches: `Top_00` +0.35, `Top_02` +1.6, `Bottom_03` -0.1, `Top_08` +1.4, `Top_14` +3.1, `Top_16` +0.65 (y). Neighbour gaps did not grow past 1.6 anywhere they were not already that wide. Six `BackgroundTrees` and 14 `Darkness` puffs that the move uncovered next to the patches were deleted (Darkness now 131 puffs, BackgroundTrees 94).
+- Thicker fog: `Fog Grid > Fog Color` alpha 0.7 to 1, `Thin Alpha` 0.45 to 1; every `Darkness` puff colour alpha 0.6 to 0.8 (per-renderer colour, no material change). `Clear Radius` 2 to 3 (see `fog.md`; cow collider 1.6 x 0.8, so the cleared path is about 4 wide).
+- `Tutorial` (root): three SpriteRenderers, order 23 (above fog 19, mist 21 and motes 22), tinted plum #2E1A2B because white art vanishes on the white fog. Sprites cut from `Assets/Art/Title/cow and crow controls.png` (extra slices `controls_cow` (0,232,523,403), `controls_crow` (586,230,521,405), `controls_space` (228,0,652,194); the older `controls_0` to `_8` slices are kept). Start camera sees x -5.1 to 16.2, y -6 to 6. `controls_cow` at (-2.7, 1.3), `controls_space` at (-2.7, -1.7) (left of the start clearing), `controls_crow` at (12.0, -1.2) (right), scale 0.55, 0.45 and 0.55 (key clusters about 2.2 tall, a fifth of the screen).
 - `Clearing2` moved to (21.63, 0.38), X scale 14 (was (21.6, -0.12), 14.4). `Meadow2` is the round meadow described above. `Meadow1` and `Clearing` unchanged.
-- Crow energy: `Crow > CrowEnergy > Drain Per Second` 10 -> 35. Route from start to `Exit` is 27.6 units for the cow; fog on it: 10.6 units before the tree clearing and 6.4 after (17 total). At 10 per second one bar is 50 units of flight, so the crow could clear the whole way without fruit. At 35 a bar is 14.3 units: enough for the first stretch (about 12.5 with the start offset), not the second; each fruit (30) is 4.3 units. The crow only drains while moving, so hovering is free.
+- Crow energy was 10, then 35, now 15. Route from start to `Exit` is 27.6 units for the cow; fog on it: 10.6 units before the tree clearing and 6.4 after (17 total). At 15 per second one bar is about 33 units of flight, so the first stretch is easy and the second needs a fruit or two (each fruit, 30, is 10 units). The crow only drains while moving, so hovering is free.
 
 ### Level2
 - `TreeClearings` (root) holds `Clearing_TreeFork`, `_TreeFruitA`, `_TreeFruitB`, `_TreeMeeting` at the four meadow centres, X scale 14, all in `Fog Grid > Open At Start` after `Clearing`.

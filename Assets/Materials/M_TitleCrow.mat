@@ -29,12 +29,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BobAmp: 0.2
+    - _BobAmp: 0.4
     - _BobSpeed: 1.1
     - _Phase: 2.1
     - _ScaleAmp: 0
     - _ScaleSpeed: 1
-    - _TiltDeg: 1.5
+    - _TiltDeg: 3
     - _TiltSpeed: 0.8
     - _WobbleAmp: 0
     - _WobbleScale: 6
