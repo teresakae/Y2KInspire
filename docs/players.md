@@ -77,6 +77,7 @@ On the `PlayerControl` component of each object.
 | Ram juice | Cow | CowRam > Dash Stretch / Hit Squash / Hop Time / Hop Speed / Hit Shake / Weak Shake | 1.2 / 0.7 / 0.15 / 5 / 0.3 / 0.04 |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
+| Energy (Level1) | Crow | CrowEnergy > Drain Per Second | 35 (tired scale 0.07) |
 | Energy (Level2) | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 |
 | Drowning | Crow | CrowEnergy > Drown Delay | 1.5 |
 | Crow size | Crow | Transform > Scale | 0.5 |

@@ -81,7 +81,7 @@ Replacing the tileset png resets its slices. Scenes and prefabs reference a spri
 Scene objects, all under the root `Ground` at (0, 0, 0):
 - `GroundFill`: SpriteRenderer, `SPR_GroundDarkFill` (same dark green as the meadow margin, so meadow edges have no visible square), Draw Mode Tiled, Size 44 x 13, position (10.7, 0), Order in Layer -100.
 - `Meadow1` at (3.55, -0.35), size 10.5 x 7.5.
-- `Meadow2` at (21.6, -0.8), size 9.6 x 9.6.
+- `Meadow2` at (21.63, 0.38), now `SPR_GroundMeadowRound`, Draw Mode Simple, scale 1.4 (round, about 7.4 across, centred on the fruit tree's collider centre).
 - Both use Draw Mode Sliced, Order in Layer -90, scale 1, and are not children of the `Clearing` objects (those are empty fog markers).
 - Fit rule: the rim line is about 1.5 units in from the sprite edge; top-row trunk roots touch the top rim, bottom-row canopies cover the bottom rim.
 
@@ -109,7 +109,8 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 | Fade image | Exit | LevelExit > Fade | HUD > Fade |
 | Fade length (s) | Exit | LevelExit > Fade Time | 1.5 |
 | Next level | Exit | LevelExit > Next Scene | Level1: `Level2`. Level2: `HomeScreen` |
-| Fog area / position / puffs / start clearings | Fog Grid | see `fog.md` | 45.6 x 14.4 at (10.68, 0), 94 puffs, 2 clearings |
+| Fog area / position / puffs / start clearings | Fog Grid | see `fog.md` | 48 x 24 at (12.2, -1.4), 2 clearings |
+| Crow energy (Level1) | Crow | CrowEnergy > Drain Per Second | 35 |
 
 ## Gotchas
 
@@ -138,7 +139,7 @@ Layout (world coordinates):
 |---|---|---|
 | Start clearing | (-6, -0.2), radius 4 | `Ground > Meadow_Start`; `Clearing` marker is the only `Fog Grid > Open At Start`. Cow (-7, -1), crow (-4.8, 0.2). |
 | Fork clearing | (6.3, -5.1), radius 5 | `Ground > Meadow_Fork`, `Tree_Fork` in the middle |
-| Fruit clearing A | (25.5, -1.2), radius 4.5 | `Ground > Meadow_FruitA`, `Tree_FruitA` in the middle |
+| Fruit clearing A | (25.5, -1.2), round meadow 7.1 across | `Ground > Meadow_FruitA`, `Tree_FruitA` in the middle |
 | Fruit clearing B | (40.5, -9.5), radius 4.5 | `Ground > Meadow_FruitB`, `Tree_FruitB` in the middle |
 | Meeting clearing | (19, -17.5), radius 5.5 | `Ground > Meadow_Meeting`, `Tree_Meeting` in the middle |
 | Pond | oval 14.8 x 10.8 at (19.5, -8.3) | `Ground > Pond`, `Ground > PondMask` |
@@ -176,7 +177,7 @@ Tuning (Level2 values):
 |---|---|---|---|
 | Camera limits | Main Camera | SharedCamera > Min Position / Max Position | (0, -24) / (42.7, 0) |
 | Fog area | Fog Grid | FogGrid > Area Size / Pixels Per Unit / Cell Size | 65.6 x 38.4 / 12 / 0.4 |
-| Start clearing | Fog Grid | FogGrid > Open At Start | Clearing |
+| Start and tree clearings | Fog Grid | FogGrid > Open At Start | Clearing + 4 `TreeClearings` children, X scale 14 |
 | Final-stretch regrow | Fog Grid | FogGrid > Fast Regrow Zones | FastFogZone |
 | Final snakes chase | Snake_Final0..5 | Snake > Chase Range / Chase Speed | 4 / 2.1 |
 | Crow energy | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 (a full bar is 25 s of flight, a fruit 7.5 s) |
@@ -188,3 +189,22 @@ Tuning (Level2 values):
 Reshaping by hand: move trees in pairs along a line and keep trunks touching (2.4 apart at scale 1). After moving trees, walk the cow through every bend in Play mode. A south-side tree closer than 4.4 below a path hides the path under its canopy. Moving the pond: move `Pond`, `PondMask`, `Island` and `Fruit_Island` together, and check the gap by `Tree_PondSeal0`.
 
 Not done / check by hand: snake balance is unplayed; energy at 4 per second is a guess; a full walk-through to the exit and the HomeScreen button has not been done in Play mode.
+
+
+## Depth and clearings (both levels, 23 Nov)
+
+Decoration only, no colliders, no scripts:
+- `Darkness` (root): sprites of `Assets/Art/Fog/darkness.png` (`darkness_0`), Simple, uniform scale, random turn, colour alpha 0.6, Order in Layer -30. Placed only outside the walkable area (found by flood fill with the cow's box), at least 0.5 + 0.4 x diameter from any walkable cell, so they sit behind the wall tree trunks and never on a path. Level1 145 puffs, Level2 101 (kept away from the pond and the river's water bands).
+- `BackgroundTrees` (root): plain objects (`BGTree` > `Trunk`, `Canopy`) with the wall tree's sprites and materials (`M_TreeTrunk`, `M_TreeCanopy`), scale 0.7 to 1.5, colour (0.35, 0.35, 0.4) alpha 0.6. Order in Layer -25 to -6 (higher further down the screen), above `Darkness`, below grass, shadows (-50) are below them, trunks (5) and canopies (17) are above. Level1 100 trees, Level2 66. Canopies never touch a walkable cell.
+- Both were scattered by a one-off script through the bridge, not by hand; delete a parent to remove it. Moving the paths means re-scattering.
+
+### Level1
+- `Clearing2` moved to (21.63, 0.38), X scale 14 (was (21.6, -0.12), 14.4). `Meadow2` is the round meadow described above. `Meadow1` and `Clearing` unchanged.
+- Crow energy: `Crow > CrowEnergy > Drain Per Second` 10 -> 35. Route from start to `Exit` is 27.6 units for the cow; fog on it: 10.6 units before the tree clearing and 6.4 after (17 total). At 10 per second one bar is 50 units of flight, so the crow could clear the whole way without fruit. At 35 a bar is 14.3 units: enough for the first stretch (about 12.5 with the start offset), not the second; each fruit (30) is 4.3 units. The crow only drains while moving, so hovering is free.
+
+### Level2
+- `TreeClearings` (root) holds `Clearing_TreeFork`, `_TreeFruitA`, `_TreeFruitB`, `_TreeMeeting` at the four meadow centres, X scale 14, all in `Fog Grid > Open At Start` after `Clearing`.
+- `Ground > Meadow_Fork`, `_FruitA`, `_FruitB`, `_Meeting`: now `SPR_GroundMeadowRound`, Draw Mode Simple, scale 1.4 (round, about 7.1 across), order -90. `Meadow_Start` unchanged. 12 grass tufts moved inside the new circles (radius 2 from the tree).
+- Pond: `Ground > Pond` keeps its scale (5.17, 3.69) and the collider and `Water`. Its sprite is gone; the child `PondWater` draws `Assets/Sprites/SPR_Circle.png` (a plain white circle copied from the 2D Sprite package) scaled to 14.8 x 10.8, colour the River's water blue, order -88. `PondMask` is deleted: the fog mist (`MistMask`) adds a mask without a range at Play, which made masked sprites show their square corners.
+- `Ground > Island`: `SPR_Circle` 3.2 across in the dark ground colour with a child `IslandGrass` (0.88 of that) in the meadow colour, orders -85 and -84. `Fruit_Island` unchanged.
+- Checked: cow box reaches the exit through the short branch alone and the long branch alone; not with both cut.

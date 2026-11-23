@@ -21,7 +21,7 @@ In `Start`, once:
 3. Make a texture of `Area Size x Pixels Per Unit` pixels (about 730 x 230 at Level1's 45.6 x 14.4 and 16). Each pixel's colour is `Fog Color` darkened by the map: thinnest spots at `Thin Shade` x the colour, thickest at the full colour. Alpha is `Fog Color`'s alpha x `Lerp(Thin Alpha, 1, map)`: at `Thin Alpha` 1 the fog is evenly thick; lower makes the gaps between puffs see-through (looks only, the cow is still blocked there). Before that, the map is box-blurred by `Look Blur` units (rows then columns, twice; once in Start), so puff edges fade instead of stepping. Each pixel also gets its own regrow speed multiplier: Perlin noise (own offset, same `Regrow Noise Scale`) mapped to 1 +- `Regrow Speed Jitter` / 2, so patches refill at different rates. Each pixel also gets its own regrow wait: `Regrow Delay` + Perlin noise x `Regrow Jitter` (patch size `Regrow Noise Scale`). Keep a 0..1 fog amount per pixel and a "last cleared" time per pixel.
 4. Create `Fog Visual` with that texture as a sprite, at `Sorting Order`.
 5. Create `Fog Colliders` with one box collider per `Cell Size` square (about 182 x 58 = 10.5k), all on.
-6. For each object in `Open At Start`, clear a circle at its position. Radius is half its X scale. (Level1: `Clearing` at (-4.8, 0.01), X scale 8.4, radius 4.2; `Clearing2` at (21.6, -0.12), X scale 14.4, radius 7.2.)
+6. For each object in `Open At Start`, clear a circle at its position. Radius is half its X scale. (Level1: `Clearing` at (4.17, 0.14), X scale 8.4; `Clearing2` is the fruit tree's clearing, now at (21.63, 0.38), X scale 14. Level2: `Clearing` plus four tree clearings under `TreeClearings`, X scale 14 each.)
 7. Snapshot the result as the "rest" state: the fog amounts, and which colliders are on. Regrowth never goes past this.
 
 Every frame, in `Update`, in this order:
@@ -36,6 +36,7 @@ Clearing a hole:
 - Colliders: every cell in range whose centre now looks clear (fog below `Reveal Threshold`, same test as `IsClear`) is switched off, so blocking follows the ragged edge. Cells are not partly cleared, so the blocking edge is a little rougher than the visible edge.
 
 Regrowing:
+- Fast zones: `Fog Grid > Fast Regrow Zones` lists marker objects; each marker's position is a box centre and its Transform X / Y scale is the box width / height (world units; rotation ignored). In Start every pixel whose centre is inside any box is flagged once (a bool per pixel). Flagged pixels use `Fast Regrow Delay` instead of `Regrow Delay` (the patchy `Regrow Jitter` is still added) and `Fast Regrow Speed` instead of `Regrow Speed` (the per-patch speed multiplier still applies). Everything else about regrowth (cow safe zone, rest state) is unchanged. Zones are drawn as yellow wire boxes when the Fog Grid is selected. Zones are not moved at runtime.
 - Pixels: a pixel grows by `Regrow Speed x deltaTime` toward its rest amount when it was last cleared more than its own wait ago (`Regrow Delay` plus up to `Regrow Jitter`, varying in soft patches, so a trail creeps back in blotches instead of reappearing as one drawn shape) and it is outside the cow's safe zone: `Cow Safe Radius` around the cow, with its edge wobbled by the same noise as the holes (`Edge Noise`, `Edge Noise Scale`), so the safe bubble is ragged too. Past that edge the regrow target ramps smoothly from 0 to the rest amount over `Cow Safe Fade` (smoothstep), so the bubble fades out instead of ending in a hard step (measured neighbour-pixel jump near the cow: 0.64 at fade 0, 0.28 at fade 1). Cells inside that ring stay unblocked. (At 0.5 per second, a fully clear pixel takes 2 s to refog.)
 - Colliders: a cell comes back on only if all of these hold. It was on at rest. Its centre is not inside the cow collider's bounds, grown by `Cell Size`. The pixel under its centre is back to its rest amount.
 
@@ -49,7 +50,7 @@ All on `Fog Grid > Fog Grid`.
 |---|---|---|---|
 | Who clears fog | Fog Grid | Crow | Crow |
 | Who fog won't grow under | Fog Grid | Cow | Cow |
-| Start clearings | Fog Grid | Open At Start | Clearing, Clearing2 (2 entries) |
+| Start and tree clearings | Fog Grid | Open At Start | Level1: Clearing, Clearing2. Level2: Clearing, TreeClearings > Clearing_TreeFork, _TreeFruitA, _TreeFruitB, _TreeMeeting |
 | Fog area in units | Fog Grid | Area Size | 45.6 x 14.4 in Level1 (covers both screens, camera size 6, with margin) |
 | Crow's hole radius | Fog Grid | Clear Radius | 2 in Level1 (script default 0.75). With fog.png and the default `Clear Falloff`, the walkable part is about 1.34 x this, so 2 gives about 2.7 units walkable. The cow's feet collider is 1.6 wide and 0.8 tall, so there is plenty of room. Shrink the curve or the shape a lot and the cow stops fitting. |
 | Crow's hole shape | Fog Grid | Clear Shape | fog.png (empty = round) |
@@ -76,6 +77,9 @@ All on `Fog Grid > Fog Grid`.
 | Regrow patch size | Fog Grid | Regrow Noise Scale | 0.8 (lower = bigger blotches) |
 | Regrow speed variation by patch | Fog Grid | Regrow Speed Jitter | 0.5 (0 = same speed everywhere; 1 = fastest patches about 3x the slowest) |
 | Regrow rate (fraction/s) | Fog Grid | Regrow Speed | 0.75 |
+| Fast regrow boxes | Fog Grid | Fast Regrow Zones | empty (markers: position = centre, scale = size) |
+| Delay inside a fast zone (s) | Fog Grid | Fast Regrow Delay | 1 (default) |
+| Regrow rate inside a fast zone (fraction/s) | Fog Grid | Fast Regrow Speed | 1.5 (default) |
 | No-regrow radius around cow | Fog Grid | Cow Safe Radius | 2 (script default 0.75) |
 | Soft ring outside the safe radius | Fog Grid | Cow Safe Fade | 1 unit (script default 1; 0 = hard edge). Fog in the ring regrows only partway (0 at the safe radius, full at radius + fade), so the bubble has no hard line |
 | How clear counts as revealed (snakes wake) | Fog Grid | Reveal Threshold | 0.5 (default) |
@@ -153,3 +157,7 @@ Three copies of Level1 in `Assets/Sandbox` (not in Build Settings): `FogTest_Sil
 - Crow clears fog even when it is "landed" (standing still). Design says a landed crow should be in danger, not a free light.
 - Snakes are not revealed by clearing, because snakes don't exist.
 - The drifting fog shader (see "Fog shader") and the `Mist` wisps are not tested in a WebGL build yet.
+
+## Tree clearings
+
+Every fruit tree sits in a pre-cleared circle so the cow can walk round the trunk and ram it without the crow clearing first. Each is an empty marker (X scale = diameter) in `Fog Grid > Fog Grid > Open At Start`, centred on the tree's collider centre (the tree's position plus 1.58 up). The cleared hole is smaller than the marker: the falloff curve and edge noise leave about 70 percent clear, so a marker X scale of 14 gives roughly 8 units of clear fog, lopsided by a unit or so. Measured in Play (cow box 1.6 x 0.8 against the enabled fog cells): scale 9 to 12 left the cow unable to get round the trunk; 14 lets it reach the left, right, top and bottom of the trunk in all five trees. Don't shrink below about 13.
