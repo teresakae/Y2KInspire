@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 /// <summary>Sleeps coiled under fog. Once first revealed it roams for good, fog or not (stretched, slithering), coils to warn,
@@ -42,7 +43,21 @@ public class Snake : MonoBehaviour
     [Tooltip("Seconds the dead snake takes to fade out before it is removed.")]
     [SerializeField] private float deadFadeTime = 1f;
 
+    [Tooltip("What blocks the snake: tree trunks and water, like the cow. Tick Default and Water; leave Fog and Crow off.")]
+    [SerializeField] private LayerMask obstacles = ~0;
+    [Tooltip("Snake's body size for bumping into trunks and water (units).")]
+    [SerializeField] private float bodyRadius = 0.35f;
+
+    [Tooltip("Spawned over the snake when the cow's dash hits it (the floating \"bonk!\"). Empty = none.")]
+    [SerializeField] private GameObject bonk;
+    [Tooltip("How far above the snake the bonk appears (units).")]
+    [SerializeField] private float bonkHeight = 0.6f;
+    [Tooltip("Runs when the cow's dash kills this snake. Passes the snake. Used by the tutorial sign.")]
+    [SerializeField] private UnityEvent<Transform> onHit;
+
     const float arriveDistance = 0.05f;
+    const int roamTries = 10;   // random roam points tried before giving up and heading home: a snake boxed in by trees must not loop forever
+    const float minSlide = 0.4f;   // a slide along a tree shorter than this fraction of a full step counts as stuck, or the snake wriggles on the spot
 
     SpriteRenderer sr;
     Rigidbody2D rb;
@@ -50,6 +65,10 @@ public class Snake : MonoBehaviour
     Vector2 home, target;
     bool revealed, warning, eaten, dying;
     float warnTimer, pauseTimer, flipTimer, eatenTimer, dyingTimer;
+    TreeLook[] trees;          // for the canopy test; found in Start because TreeLook places canopies in Awake
+    FruitTree[] fruitTrees;
+    ContactFilter2D obstacleFilter;
+    readonly Collider2D[] hits = new Collider2D[16];
 
     void Awake()
     {
@@ -63,6 +82,16 @@ public class Snake : MonoBehaviour
         if (coiled == null) Debug.LogError($"{name}: missing Coiled");
         if (stretched == null) Debug.LogError($"{name}: missing Stretched");
         if (eatenMark == null) Debug.LogError($"{name}: missing Eaten Mark");
+    }
+
+    void Start()
+    {
+        trees = FindObjectsByType<TreeLook>();
+        fruitTrees = FindObjectsByType<FruitTree>();
+        obstacleFilter = new ContactFilter2D();
+        obstacleFilter.SetLayerMask(obstacles);
+        obstacleFilter.useTriggers = true;   // water may be a trigger; trees are checked below
+        if (Blocked(home)) Debug.LogWarning($"{name}: starts inside a tree, its leaves or water");
     }
 
     void Update()
@@ -141,7 +170,7 @@ public class Snake : MonoBehaviour
         if (chasing)
         {
             pauseTimer = 0f;
-            Slither(((Vector2)crow.transform.position - rb.position).normalized, chaseSpeed);
+            if (!Slither(((Vector2)crow.transform.position - rb.position).normalized, chaseSpeed)) Coil();   // stuck behind a tree: wait
             return;
         }
 
@@ -149,7 +178,7 @@ public class Snake : MonoBehaviour
         {
             Coil();
             pauseTimer -= Time.deltaTime;
-            if (pauseTimer <= 0f) target = home + Random.insideUnitCircle * roamRadius;
+            if (pauseTimer <= 0f) target = PickTarget();
             return;
         }
 
@@ -161,15 +190,58 @@ public class Snake : MonoBehaviour
             return;
         }
 
-        Slither(toTarget.normalized, moveSpeed);
+        if (!Slither(toTarget.normalized, moveSpeed))
+        {
+            // Boxed in by a trunk, leaves or water: rest, then pick another point.
+            pauseTimer = pauseTime;
+            Coil();
+        }
     }
 
-    void Slither(Vector2 dir, float speed)
+    // First random point near home that is not blocked; home itself if all tries are.
+    Vector2 PickTarget()
+    {
+        for (int i = 0; i < roamTries; i++)
+        {
+            Vector2 p = home + Random.insideUnitCircle * roamRadius;
+            if (!Blocked(p)) return p;
+        }
+        return home;
+    }
+
+    // True if a trunk or water is within bodyRadius of p, or p is under a canopy (the snake would hide under the leaves).
+    bool Blocked(Vector2 p)
+    {
+        int count = Physics2D.OverlapCircle(p, bodyRadius, obstacleFilter, hits);
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D c = hits[i];
+            if (c.GetComponentInParent<Water>() != null) return true;
+            if (!c.isTrigger && (c.GetComponentInParent<TreeLook>() != null || c.GetComponentInParent<FruitTree>() != null)) return true;
+        }
+        foreach (TreeLook t in trees)
+            if (t.CanopyCovers(p, bodyRadius)) return true;
+        foreach (FruitTree t in fruitTrees)
+            if (t.CanopyCovers(p, bodyRadius)) return true;
+        return false;
+    }
+
+    // Moves one step, sliding along trees like the cow (x only, then y only). Returns false if it could not move.
+    // A snake that is already blocked moves freely, so it can get out.
+    bool Slither(Vector2 dir, float speed)
     {
         Vector2 pos = rb.position;
+        Vector2 step = dir * speed * Time.deltaTime;
+        if (Blocked(pos + step) && !Blocked(pos))
+        {
+            if (!Blocked(pos + new Vector2(step.x, 0f))) step = new Vector2(step.x, 0f);
+            else if (!Blocked(pos + new Vector2(0f, step.y))) step = new Vector2(0f, step.y);
+            else return false;
+        }
+        if (step.magnitude < minSlide * speed * Time.deltaTime) return false;
         if (stretched != null) sr.sprite = stretched;   // empty field would blank the sprite while moving
-        rb.MovePosition(pos + dir * speed * Time.deltaTime);
-        rb.MoveRotation(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + spriteAngle);
+        rb.MovePosition(pos + step);
+        rb.MoveRotation(Mathf.Atan2(step.y, step.x) * Mathf.Rad2Deg + spriteAngle);
 
         flipTimer -= Time.deltaTime;
         if (flipTimer <= 0f)
@@ -177,6 +249,7 @@ public class Snake : MonoBehaviour
             flipTimer = flipInterval;
             sr.flipX = !sr.flipX;
         }
+        return true;
     }
 
     // The dash may start already overlapping the snake, so Stay counts too.
@@ -190,6 +263,8 @@ public class Snake : MonoBehaviour
 
     void Die()
     {
+        if (bonk != null) Instantiate(bonk, transform.position + Vector3.up * bonkHeight, Quaternion.identity);
+        onHit.Invoke(transform);
         if (dead == null)
         {
             Destroy(gameObject);

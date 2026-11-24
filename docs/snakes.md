@@ -9,7 +9,7 @@ A snake sleeps coiled under the fog. It doesn't move until the crow first clears
 - Script: `Assets/Scripts/Snake.cs`, on each snake object.
 - Reads `CrowEnergy.IsGrounded` and `CowRam.IsStrongDash` (see `players.md`) and `FogGrid.IsClear` (see `fog.md`).
 - Art: `Assets/Art/Snake/snake_coiled.png`, `snake_stretched.png` (130 pixels per unit); dead sprite `SPR_SnakeDead` (sub-sprite of `Assets/Art/Snake/cow and crow (2).png`, set to 130 pixels per unit so sizes match; the rest of that sheet is unused).
-- Scene: `Snake` in SampleScene. In `Assets/Level1.unity` the `Snake` object is inactive: snakes start in Level2, so Level1 has none.
+- Scene: `Snake` in SampleScene. In `Assets/Scenes/Level1.unity` the `Snake` object is inactive: snakes start in Level2, so Level1 has none.
 
 ## How it works
 
@@ -26,17 +26,21 @@ A snake sleeps coiled under the fog. It doesn't move until the crow first clears
 
 Kill: `OnTriggerEnter2D` and `OnTriggerStay2D`. If the other object has `CowRam` and `IsStrongDash` is true, the snake dies. With `Dead` empty it is destroyed at once. With `Dead` set it swaps to that sprite (unflipped, upright), turns its collider off, stops all behaviour (no roam, warn or bite), fades its sprite alpha to 0 over `Dead Fade Time`, then is destroyed. The collider is a trigger, so the dash isn't stopped.
 
+Every kill by a strong dash (also with `Dead` empty) spawns `Bonk` (`Assets/Prefabs/PF_BonkPop`) at `Bonk Height` above the snake and fires `On Hit` (UnityEvent passing the snake's Transform; Level2 wires it to `Tip_Snake.Hit`, see `tutorial.md`). `PF_BonkPop`: TextMeshPro (3D) "bonk!" in `M_BonkText` (gold, plum outline), sorting order 32, script `BonkPop` (punch in, shake, rise 0.5, fade, destroys itself), child `PF_RamPuff` burst.
+
 `home` is the snake's position at Awake.
+
+Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigger collider with `TreeLook` or `FruitTree` (trunks), or a `Water` collider, is within `Body Radius` of p (`Physics2D.OverlapCircle` with `Obstacles` as the layer mask), or when p is under a canopy (`TreeLook.CanopyCovers` / `FruitTree.CanopyCovers` with `Body Radius` as margin, so a snake never hides under leaves). `Start` caches every `TreeLook` and `FruitTree` (not `Awake`: `TreeLook` places canopies in its Awake) and warns "starts inside a tree, its leaves or water" if the home is blocked. A step into a blocked spot tries x only, then y only, so it slides along trunks like the cow; if both are blocked (or the slide is shorter than const `minSlide` 0.4 of a full step, so it doesn't wriggle on the spot) a roaming snake coils and rests for `Pause Time`, then picks a new target, and a chasing snake coils that step. A snake that is already inside something moves freely so it can get out. A new roam target is the first of 10 random points near home that is not blocked, else home.
 
 ## Adding a snake
 
 1. Create an empty object `Snake`.
-2. Add a SpriteRenderer with the coiled sprite. Set `Order in Layer` below 10 so fog hides it.
+2. Add a SpriteRenderer with the coiled sprite. Set `Order in Layer` below the fog's (Level2 uses 14, fog 19).
 3. Add a Rigidbody2D, `Body Type` Kinematic.
 4. Add a Capsule Collider 2D with `Is Trigger` on, sized to the body.
 5. Add the `Snake` script. Drag `Crow` into `Crow`, `Fog Grid` into `Fog`, and the two sprites into `Coiled` and `Stretched`. Optional: `SPR_SnakeDead` into `Dead`; `Chase Range` above 0 to make it hunt the crow.
 6. Eaten mark: right-click Snake > `3D Object > Text - TextMeshPro`, name it `EatenMark`, text `!`, red, Font Size about 8, placed just above the snake. In `Extra Settings > Order in Layer` set 20 so it draws above the fog. Untick it (inactive). Drag it into `Snake > Eaten Mark`.
-7. Size: set `Transform > Scale` (around 0.5 with the current art). The collider and the "!" scale with it; ranges don't.
+7. Set `Obstacles` to Default + Water (not Fog, not Crow). Size: set `Transform > Scale` (around 0.5 with the current art). The collider and the "!" scale with it; ranges don't.
 8. Select the snake to see roam radius, warn range and chase range as wire circles.
 
 ## Tuning
@@ -54,17 +58,23 @@ Kill: `OnTriggerEnter2D` and `OnTriggerStay2D`. If the other object has `CowRam`
 | Warn time (s) | Snake | Snake > Warn Time | 1 (default) |
 | Chase distance (0 = never chase) | Snake | Snake > Chase Range | 0 (default) |
 | Chase speed (units/s) | Snake | Snake > Chase Speed | 2 (default) |
+| What blocks it | Snake | Snake > Obstacles | Default + Water in Level2 (script default: everything) |
+| Body size for bumping (units) | Snake | Snake > Body Radius | 0.35 (default) |
 | Dead sprite (empty = vanish at once) | Snake | Snake > Dead | SPR_SnakeDead (to set) |
 | Dead fade (s) | Snake | Snake > Dead Fade Time | 1 (default) |
+| "bonk!" prefab (empty = none) | Snake | Snake > Bonk | PF_BonkPop |
+| "bonk!" height (units) | Snake | Snake > Bonk Height | 0.6 (default), 0.2 in Level2 |
+| Runs on a kill | Snake | Snake > On Hit | Level2: `Tip_Snake.Hit` |
 | How clear counts as revealed | Fog Grid | FogGrid > Reveal Threshold | 0.5 (default) |
 | Min charge to kill | Cow | CowRam > Min Charge | 0.5 (default) |
 
 ## Gotchas
 
-- Hidden on screen = sorting order: the snake's `Order in Layer` must stay below the fog's (10). Asleep = never yet revealed (`FogGrid.IsClear` at its centre). A snake partly out of the fog can be asleep but partly visible.
+- Hidden on screen = sorting order: the snake's `Order in Layer` must stay below the fog's (Level2: snakes 14, fog 19; the cow is 15, the crow 16, canopies 17). A snake at 14 draws over the ground and tufts but under the animals. Asleep = never yet revealed (`FogGrid.IsClear` at its centre). A snake partly out of the fog can be asleep but partly visible.
 - Once awake it roams, warns and bites under fog too. In practice the crow clears fog around itself, so a bite usually happens in the open.
 - `Stretched` empty: the snake keeps the coiled sprite while moving (logs an error at start). Before this guard, an empty field blanked the sprite and the snake looked like it teleported.
 - The reload needs the scene in the build list. `SampleScene` is.
+- Leave `Obstacles` without Fog: the fog colliders (pool) are on the Fog layer and would stop snakes under fog. Leave Crow off too, so the crow's collider doesn't block them.
 - The crow counts as grounded when it stands still or is out of energy (`CrowEnergy.IsGrounded`). A tired crow hopping slowly is still grounded.
 - A kill needs a dash charged to at least `CowRam > Min Charge`. A weak dash passes through.
 - The snake ignores the cow otherwise and only targets the crow.
@@ -72,6 +82,6 @@ Kill: `OnTriggerEnter2D` and `OnTriggerStay2D`. If the other object has `CowRam`
 
 ## Not built yet
 
-- Warning sound (FMOD), vfx, screen shake.
+- Warning sound, vfx, screen shake.
 - Lose screen. The bite reloads the scene directly.
 - Balance pass on Level2's 16 snakes (see `level.md`).

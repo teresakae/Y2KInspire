@@ -64,6 +64,7 @@ public class PlayerControl : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale == 0f) return; // paused
         // ponytail: keyboard only; add gamepad or an Input Actions asset if needed
         var kb = Keyboard.current;
         float x = 0, y = 0;

@@ -33,6 +33,7 @@ public class SharedCamera : MonoBehaviour
 
     void LateUpdate()
     {
+        if (Time.timeScale == 0f) return;   // paused: no shake, and SmoothDamp divides by deltaTime
         if (cam == null || players == null || players.Length == 0) return;
         transform.position -= shakeOffset;   // follow from the true position so the shake never drifts the camera
         Vector2 mid = Vector2.zero;

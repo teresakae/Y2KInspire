@@ -37,7 +37,8 @@ Draw order (`SpriteRenderer > Order in Layer`, all on the Default sorting layer)
 | 13 | Dropped fruit (`PF_Fruit`) |
 | 11 | Tree trunks (wall trees and fruit tree) |
 | 10 | Fog (`Fog Grid > Sorting Order`) |
-| -5 | Snake (anything below 10 hides under fog) |
+| 14 | Snake in Level2 (under the cow, over the ground; fog 19 hides it) |
+| -5 | Snake in SampleScene (anything below the fog hides under it) |
 
 Trees, fruit and characters draw above the fog. Characters draw above trunks but below canopies, so the crow is hidden when it flies over a canopy.
 
@@ -84,11 +85,11 @@ Both:
 - Fog: covers the level. The crow clears it. Fog blocks the cow. Fog regrowth (cleared fog grows back) is confirmed by the owner; keep it, the current speed is fine. See `fog.md`.
 - Crow energy: drains while flying. At zero the crow is forced to land, and stays down (snake-vulnerable) until it eats fruit.
 - Trees and fruit: fruit hangs in trees. The cow rams a tree, fruit falls, the crow eats it.
-- Moo guidance: the herd moos. FMOD positional audio, so the sound comes from the direction to go.
+- Moo guidance: the herd moos. Panned audio (an AudioSource), so the sound comes from the direction to go.
 - Snakes: hidden in fog, revealed when the crow clears it. They roam freely, warn with sfx/vfx, and eat the crow if it is on the ground. The cow kills them by ramming.
 - Level flow: win by reaching the herd (or the next stretch of path toward it). Lose when a snake eats the crow; the level restarts.
 - UI: start menu, restart, feedback for energy and win/lose.
-- Audio: all through FMOD.
+- Audio: Unity's built-in audio (AudioSource, AudioClip). FMOD was removed on 24 Nov 2026, unused.
 
 ## Structure and scope
 
@@ -108,7 +109,7 @@ Jam minimum: clear win and lose, a defined obstacle, a repeating core loop, basi
 
 Scoring weights at playtest curation: game design 40, visual 35, audio 15, implementation 10.
 
-Builds: WebGL (main, for itch.io) and Windows (backup for the finals booth). Risks: FMOD on WebGL needs extra setup. FogGrid loops about 168k pixels and 10.5k cells every frame in Level1 on the CPU and may be slow in WebGL.
+Builds: WebGL (main, for itch.io) and Windows (backup for the finals booth). Risks: FogGrid loops about 168k pixels and 10.5k cells every frame in Level1 on the CPU and may be slow in WebGL.
 
 ## Jam deliverables
 
@@ -134,15 +135,17 @@ Gimersia Inspire 2026 (Indonesia).
 | Crow lands / eats fruit | Partial | Eats by flying over the fruit; "landed" is not a state. Not wired in the scene yet. See `players.md`. |
 | Trees and fruit | Partial | `FruitTree` and `Fruit` scripts exist. Not wired in the scene yet. See `trees.md`. |
 | Cow rams trees | Partial | Charged ram on Space (`CowRam`). Not wired in the scene yet. See `players.md`. |
-| Moo guidance (FMOD) | Placeholder: faint text on a timer (`MooPrompt`). No FMOD. | FMOD is installed, no events. See `level.md`. |
+| Moo guidance (audio) | Placeholder: speech bubble on a timer (`MooPrompt`, in `PF_HUD`). No sound. | No sound clips yet. See `level.md`. |
 | Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
 | Win condition | Placeholder: exit fades to white and restarts Level1 once both animals are in it (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |
-| Start menu | Built (`MainMenu`: start, continue, settings, quit). | See `menu.md`. |
+| Start menu | Built (`MainMenu`: Start resumes the save, Settings, Credits). | See `menu.md`. |
+| Pause | Built: Esc or P, settings panel, Back to resume, Save and quit to the menu. | See `menu.md`. |
+| Tutorial | Built: wobbly key drawings and signs in both levels. Unplayed by testers. | See `tutorial.md`. |
 | UI feedback | Not yet | |
 | Level1 | Partial — scene built (camera, fog, clearings, tree walls, fruit tree, exit, HUD). See `level.md`. | Moo text not placed; crow still flies through tree walls. |
-| Level2 | Built, untuned: 3x3 screens, river, pond, 16 snakes, 5 fruit trees. See `level.md` "Level2". | Needs a hand-played pass for balance. |
+| Level2 | Built, untuned: 3x3 screens, river, pond, 12 snakes, 5 fruit trees. See `level.md` "Level2". | Needs a hand-played pass for balance. |
 | Home screen | Built: "You're home." plus Back to menu (`HomeScreen`). See `menu.md`. | |
 | Final art and juice | Not yet | Prototype sprites only. |
 | WebGL build tested | Partial | Built and uploaded to itch.io 18 Nov 2026. Loads in the browser and takes keyboard input; full level not played through there yet. See `README.md` Build (WebGL). |

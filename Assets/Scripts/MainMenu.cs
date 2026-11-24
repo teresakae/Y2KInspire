@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 /// <summary>
-/// Main menu: Start resumes the saved level (or the first scene), settings panel (fullscreen, volume), credits.
+/// Main menu: Start resumes the saved level (or the first scene), settings panel.
 /// Buttons call the public methods through their OnClick lists in the Inspector.
 /// </summary>
 public class MainMenu : MonoBehaviour
@@ -14,23 +13,12 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private string endScene = "HomeScreen";
     [Tooltip("Settings panel. Inactive in the scene.")]
     [SerializeField] private GameObject settingsPanel;
-    [Tooltip("Fullscreen toggle inside the settings panel.")]
-    [SerializeField] private Toggle fullscreenToggle;
-    [Tooltip("Volume slider inside the settings panel. Min 0, Max 1.")]
-    [SerializeField] private Slider volumeSlider;
 
     void Start()
     {
         if (settingsPanel == null) Debug.LogError($"{name}: missing settingsPanel");
-        if (fullscreenToggle == null) Debug.LogError($"{name}: missing fullscreenToggle");
-        if (volumeSlider == null) Debug.LogError($"{name}: missing volumeSlider");
-        if (settingsPanel == null || fullscreenToggle == null || volumeSlider == null) return;
-
-        // WithoutNotify: setting the UI must not fire the OnValueChanged saves below
-        fullscreenToggle.SetIsOnWithoutNotify(Screen.fullScreen);
-        float v = PlayerPrefs.GetFloat("Volume", 1f);
-        volumeSlider.SetValueWithoutNotify(v);
-        AudioListener.volume = v;
+        // the panel starts inactive, so apply the saved volume here
+        AudioListener.volume = PlayerPrefs.GetFloat("Volume", 1f);
     }
 
     public void StartGame()
@@ -43,23 +31,5 @@ public class MainMenu : MonoBehaviour
     public void OpenSettings()
     {
         settingsPanel.SetActive(true);
-    }
-
-    public void CloseSettings()
-    {
-        settingsPanel.SetActive(false);
-    }
-
-    public void SetFullscreen(bool on)
-    {
-        Screen.fullScreen = on;
-    }
-
-    public void SetVolume(float v)
-    {
-        // ponytail: FMOD not wired yet; route to an FMOD bus when audio arrives
-        AudioListener.volume = v;
-        PlayerPrefs.SetFloat("Volume", v);
-        PlayerPrefs.Save();   // WebGL only persists after Save
     }
 }

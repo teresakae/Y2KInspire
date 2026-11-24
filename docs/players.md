@@ -8,7 +8,7 @@ Two animals on one keyboard. The cow (WASD) walks. The crow (arrow keys) flies f
 
 - Scripts: `Assets/Scripts/PlayerControl.cs`, one copy on each of `Cow` and `Crow`. `CowRam.cs` goes on `Cow`, `CrowEnergy.cs` on `Crow`. `Water.cs` marks water colliders (river, pond).
 - Scene objects: `Cow` (Rigidbody2D, BoxCollider2D, SpriteRenderer, child `Shadow`) and `Crow` (Rigidbody2D, SpriteRenderer, children `Shadow` and `FlyShadow`).
-- Sprites: `Assets/Sprites/Cow/` (front, back, left, right) and `Assets/Sprites/Crow/` (front, back, left, right, fly).
+- Sprites: `Assets/Sprites/Cow/` (only `front.png` now, used by the SampleScene prototype; the level cow art is `Assets/Art/Cow`) and `Assets/Sprites/Crow/` (front, back, left, right, fly).
 - Artist cow sheet: `Assets/Art/Cow/cow and crow_cow.png`, sliced into `cow_front/back/left/right`, `cow_walk_front/back/left/right_0..2` and `cow_crow_head`. Pivot Bottom Center on every slice; front/back slices are 316 px wide, side slices 276 px, so the feet stay put between frames. Hooked up to `Cow`: facing sprites and all four walks (back frames = Walk Up, front frames = Walk Down).
 
 ## How it works

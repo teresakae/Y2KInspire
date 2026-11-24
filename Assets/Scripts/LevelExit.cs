@@ -16,19 +16,24 @@ public class LevelExit : MonoBehaviour
     [SerializeField] private Image fade;
     [Tooltip("Seconds for a full fade, in and out.")]
     [SerializeField] private float fadeTime = 1.5f;
-    [Tooltip("Scene to load at the exit. Empty = reload this scene (until the next level exists). Also saved for the menu's Continue button.")]
+    [Tooltip("Scene to load at the exit. Also saved, so Start in the menu resumes there.")]
     [SerializeField] private string nextScene = "";
 
     float alpha = 1f;       // starts white, fades in
     bool cowIn;
     bool crowIn;
     bool leaving;
+    AsyncOperation load;
+
+    // Caps one frame's fade step: a slow frame right after a scene loads would otherwise jump the fade.
+    const float maxFadeStep = 0.05f;
 
     void Start()
     {
         if (cow == null) Debug.LogError($"{name}: missing cow");
         if (crow == null) Debug.LogError($"{name}: missing crow");
         if (fade == null) Debug.LogError($"{name}: missing fade");
+        if (nextScene == "") Debug.LogError($"{name}: missing nextScene");
         SetAlpha();
     }
 
@@ -48,22 +53,22 @@ public class LevelExit : MonoBehaviour
     void StartLeaving()
     {
         leaving = true;
-        if (nextScene != "")
-        {
-            PlayerPrefs.SetString("SavedLevel", nextScene);
-            PlayerPrefs.Save();   // WebGL only persists after Save
-        }
+        PlayerPrefs.SetString("SavedLevel", nextScene);
+        PlayerPrefs.Save();   // WebGL only persists after Save
+        // Load behind the fade; the switch waits until the screen is fully white.
+        load = SceneManager.LoadSceneAsync(nextScene);
+        if (load != null) load.allowSceneActivation = false;
     }
 
     void Update()
     {
         if (fade == null) return;
-        alpha = Mathf.MoveTowards(alpha, leaving ? 1f : 0f, Time.deltaTime / fadeTime);
+        alpha = Mathf.MoveTowards(alpha, leaving ? 1f : 0f, Mathf.Min(Time.deltaTime, maxFadeStep) / fadeTime);
         SetAlpha();
         if (leaving && alpha >= 1f)
         {
-            enabled = false;   // the load happens next frame; don't ask twice
-            SceneManager.LoadScene(nextScene == "" ? SceneManager.GetActiveScene().name : nextScene);
+            enabled = false;   // don't ask twice
+            if (load != null) load.allowSceneActivation = true;
         }
     }
 

@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// The herd's moo as a speech bubble on the HUD: it pops up every few seconds and points toward the goal, sitting on it when it is on screen and on the screen edge when it is not.
 /// </summary>
-// ponytail: FMOD positional moo goes here later (play the event when a moo starts).
+// ponytail: the moo sound goes here later (play an AudioSource when a moo starts, panned toward the goal).
 public class MooPrompt : MonoBehaviour
 {
     [Header("Timing")]
@@ -36,8 +36,18 @@ public class MooPrompt : MonoBehaviour
     [SerializeField] private float onScreenOffset = 60f;
     [Tooltip("Degrees added to the tail's turn. Set it so the tail art points at the goal. 0 = art points right.")]
     [SerializeField] private float tailAngleOffset = 0f;
-    [Tooltip("Pixels (at 1920x1080) from the bubble centre to the tail. About half the bubble's size.")]
-    [SerializeField] private float tailDistance = 60f;
+
+    [Header("Moo juice")]
+    [Tooltip("Bubble scale over the pop time: starts small, overshoots, settles at 1.")]
+    [SerializeField] private AnimationCurve popCurve = new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(0.5f, 1.12f), new Keyframe(0.8f, 0.97f), new Keyframe(1f, 1f));
+    [Tooltip("Seconds the pop takes at the start of each moo.")]
+    [Range(0.05f, 1f)]
+    [SerializeField] private float popTime = 0.35f;
+    [Tooltip("Degrees the bubble wiggles each way while it shows.")]
+    [Range(0f, 15f)]
+    [SerializeField] private float wiggleAngle = 4f;
+    [Tooltip("Wiggle speed (radians per second).")]
+    [SerializeField] private float wiggleSpeed = 14f;
 
     Canvas canvas;
 
@@ -58,12 +68,6 @@ public class MooPrompt : MonoBehaviour
         if (target == null) Debug.LogError($"{name}: missing target");
     }
 
-    /// <summary>Point the moo at a new goal, e.g. when an area opens.</summary>
-    public void SetTarget(Transform t)
-    {
-        target = t;
-    }
-
     // LateUpdate, not Update: the camera smooths in its own LateUpdate; placing earlier lags a frame behind it.
     void LateUpdate()
     {
@@ -75,12 +79,12 @@ public class MooPrompt : MonoBehaviour
         }
 
         float t = Time.timeSinceLevelLoad % interval;   // restarts at 0 on every level load, so the level opens on a moo
-        float a = 0f;
-        if (t < fadeTime) a = t / fadeTime;
-        else if (t < fadeTime + holdTime) a = 1f;
-        else if (t < 2f * fadeTime + holdTime) a = 1f - (t - fadeTime - holdTime) / fadeTime;
+        float a = Mathf.Clamp01(Mathf.Min(t, 2f * fadeTime + holdTime - t) / fadeTime);   // up, hold, down
         group.alpha = a * maxAlpha;
         if (a <= 0f) return;   // hidden: skip the placement maths
+
+        bubble.localScale = Vector3.one * popCurve.Evaluate(Mathf.Clamp01(t / popTime));
+        bubble.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * wiggleSpeed) * wiggleAngle * a);
 
         float scale = canvas.scaleFactor;   // pixels below are written for the 1920x1080 reference
         float pad = edgePadding * scale;
@@ -97,14 +101,18 @@ public class MooPrompt : MonoBehaviour
         }
         else
         {
-            // Shrink dir until it touches the padded rect: the smaller of the x and y factors.
-            float sx = Mathf.Abs(dir.x) > 0.001f ? half.x / Mathf.Abs(dir.x) : float.MaxValue;
-            float sy = Mathf.Abs(dir.y) > 0.001f ? half.y / Mathf.Abs(dir.y) : float.MaxValue;
-            bubble.position = centre + dir * Mathf.Min(sx, sy);
+            bubble.position = centre + ToEdge(dir, half);
         }
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         tail.localEulerAngles = new Vector3(0f, 0f, angle + tailAngleOffset);
-        tail.anchoredPosition = dir.normalized * tailDistance;   // orbit the bubble edge on the goal's side
+        tail.anchoredPosition = ToEdge(dir, bubble.rect.size * 0.5f);   // sits on the bubble's edge, half hidden behind the body
+    }
+
+    // Stretches or shrinks dir until it touches a rect of this half-size: the smaller of the x and y factors.
+    // Dividing by 0 gives Infinity, which Min ignores.
+    Vector2 ToEdge(Vector2 dir, Vector2 half)
+    {
+        return dir * Mathf.Min(half.x / Mathf.Abs(dir.x), half.y / Mathf.Abs(dir.y));
     }
 }

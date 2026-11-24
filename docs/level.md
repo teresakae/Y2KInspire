@@ -9,16 +9,16 @@ The player starts in a small clearing surrounded by fog and walls of trees. A fa
 ## Where it lives
 
 - Scripts: `Assets/Scripts/SharedCamera.cs`, `Assets/Scripts/MooPrompt.cs`, `Assets/Scripts/LevelExit.cs`
-- Scene: `Assets/Level1.unity` (started as a copy of SampleScene; since the mist swap it is the `FogTest_Mist` scene, see `fog.md`)
+- Scene: `Assets/Scenes/Level1.unity` (started as a copy of SampleScene; since the mist swap it is the `FogTest_Mist` scene, see `fog.md`)
 - Look objects: `Mist` (two layers of drifting wisps), `Motes` (floating specks), `Global Volume` (post-processing, `Assets/Settings/VP_Mist.asset`), `Crow > Light 2D` (warm glow), `Grass` (swaying tufts, see `grass.md`). Assets: `Assets/Shaders/FogSwirl.shader`, `Assets/Materials/M_FogSwirl.mat`, `M_MoteGlow.mat`, scripts `MistDrift.cs`, `MistMask.cs`.
-- Scene objects: `Snake` is inactive (hidden in Level1; snakes start in Level2, see `snakes.md`). `Main Camera` holds `SharedCamera`. `Exit` holds `LevelExit`. `HUD > Fade` is the fade. `HUD > MooBubble` is the moo bubble (see below).
+- Scene objects: `Snake` is inactive (hidden in Level1; snakes start in Level2, see `snakes.md`). `Main Camera` holds `SharedCamera`. `Exit` holds `LevelExit`. `HUD > Fade` is the fade. `HUD > MooBubble` is the moo bubble, part of `PF_HUD` (see below).
 
 ## Layout
 
 Two screens side by side, each about 21.35 x 12 units (camera size 6, 16:9). Screen 1 centre is x = 0, screen 2 centre is x = 21.35. The level spans about x -10.7 to 32, y -6 to 6.
 
-- Clearing 1 on screen 1: the start. `Clearing` at (-4.8, 0.01), X scale 8.4. Cow start (-4.85, -0.06), crow start (-2.71, -1.19), both inside it.
-- Clearing 2 on screen 2: the fruit tree. `Clearing2` at (21.6, -0.12), X scale 14.4, second entry in `Fog Grid > Open At Start`. `Tree` (the fruit tree, see `trees.md`) at (21.6, -1.2). The crow reaches it low on energy.
+- Clearing 1 on screen 1: the start. `Clearing` at (4.64, -0.30) (the same spot as `Ground > Meadow1`), X scale 8.4. Cow start (4.12, -1.16), crow start (5.55, -0.42), both inside it.
+- Clearing 2 on screen 2: the fruit tree. `Clearing2` at (21.63, 0.38), X scale 14, second entry in `Fog Grid > Open At Start`. `Tree` (the fruit tree, see `trees.md`) at (21.6, -1.2). The crow reaches it low on energy.
 - `Exit` at (31.2, 0): BoxCollider2D, Is Trigger, size 1 x 4.8, in the right-edge gap. Holds `LevelExit`.
 - `HUD` (prefab `Assets/Prefabs/PF_HUD`): Screen Space Overlay canvas, Sort Order 100, Canvas Scaler 1920 x 1080. Child `Fade`: full-screen stretched white Image, alpha 0, Raycast Target off.
 - `Walls`: 23 `WallTree` prefab instances, placed through the editor bridge from the sketch, scale 0.9 to 1.1. Top row and bottom row follow a corridor: open around clearing 1 (wall edges at y about +4.4 / -4.4), narrow path between the clearings (about +2.7 / -2.7, so about 5.4 tall, room for the cow's feet collider), wide around clearing 2 (about +4.1 / -4.3), then about +2.4 / -2.4 at the right edge, which is the exit gap. The map was scaled 1.2x: each tree moved so its path-facing collider edge is 1.2x further from the level centre; tree size is unchanged. Three trees close the left side at x about -10.7. The owner adjusts by hand from here.
@@ -32,13 +32,13 @@ Order of events:
 2. Every frame, `SharedCamera` moves toward the midpoint of the players (limited by `Min Position` / `Max Position`), smoothed by `Smooth Time`.
 3. Every physics step, `SharedCamera` clamps each player's Rigidbody2D position into the camera's view, shrunk by `Edge Margin`. This is a hard invisible wall: neither animal can leave the screen, so the cow can't be left behind. (ponytail note in the script: fine for two players on one screen.)
 4. The crow clears fog (see `fog.md`), the cow follows, rams the tree, the crow eats (see `players.md`, `trees.md`).
-5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` (if set) and starts fading to white. When alpha reaches 1 it loads `Next Scene`, or reloads the current scene if `Next Scene` is empty. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
+5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` and starts fading to white. When the fade starts, `LevelExit` begins loading `Next Scene` in the background (`LoadSceneAsync`, activation held); when alpha reaches 1 it lets the scene switch on. One frame's fade step is capped at 0.05 s so a slow frame after a load can't jump the fade. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
 
-`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and moves `Tail Distance` px from the bubble centre on that side (straight down when the goal is on screen); `Tail Angle Offset` fixes the art direction. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden; `SetTarget(Transform)` swaps the goal (a later AreaGate will call it when an area opens). FMOD positional moo goes here later.
+`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and sits on the bubble's edge on that side (straight down when the goal is on screen; there is no Tail Distance field, the script uses the bubble's size); `Tail Angle Offset` fixes the art direction. Each moo also pops (`Pop Curve` over `Pop Time`, 0.35 s) and the bubble wiggles `Wiggle Angle` degrees each way at `Wiggle Speed`. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden; the moo sound (AudioSource) goes here later.
 
-Moo bubble fields (`MooPrompt`): `Interval` 6, `Fade Time` 0.6, `Hold Time` 1, `Max Alpha` 0.6, `Bubble` (RectTransform), `Tail` (RectTransform), `Group` (CanvasGroup), `Cam` (empty = Main Camera), `Target` (Transform, e.g. `Exit`), `Edge Padding` 80 px, `On Screen Offset` 60 px, `Tail Angle Offset` 45 deg (square art), `Tail Distance` 50 px (scene values; script defaults are 0 and 60).
+Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `Hold Time` 1.6, `Max Alpha` 0.95, `Bubble`, `Tail` (RectTransforms), `Group` (CanvasGroup), `Cam` (empty = Main Camera), `Target` (Transform), `Edge Padding` 175 px, `On Screen Offset` 110 px, `Tail Angle Offset`, `Pop Curve`, `Pop Time` 0.35, `Wiggle Angle` 4, `Wiggle Speed` 14. Script defaults differ (Fade Time 0.6, Hold Time 1, Max Alpha 0.6, Edge Padding 80, On Screen Offset 60).
 
-Placed hierarchy: `HUD > MooBubble` [RectTransform, CanvasGroup, Image body, MooPrompt] with children `Tail` (first child so the body draws over it; a 40 x 40 square, `UISprite`, peach #F4C7A8, turned by code so its corner points at the goal) and `Text` (TMP "moo!", 40, plum #2E1A2B). `MooBubble` is 200 x 100, `UISprite` sliced, peach, CanvasGroup alpha 0, sits before `Fade` in sibling order so the white fade covers it. Set: `Target` = `Exit`, `Tail Distance` 50, `Tail Angle Offset` 45, other fields default. `Bubble` and `Group` point at `MooBubble`; `Tail` at `Tail`. Anchors/pivot centred on `MooBubble` (the script sets its screen position directly).
+`MooBubble` lives inside `PF_HUD`, so both levels get it. Per scene only `Target` is overridden (`Exit`); the rest comes from the prefab. Hierarchy: `HUD > MooBubble` [RectTransform 230 x 116, CanvasGroup, MooPrompt] with children in this order: `Tail` (behind), `Body`, `Text` (TMP "moo!", `Kkscribble SDF` 64, plum). `Tail` and `Body` are both `cow and crow ui_6` (9-sliced, 50 px borders). The bubble sits before `Fade` in sibling order so the white fade covers it. Anchors and pivot are centred (the script sets the screen position directly).
 
 `LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" for the menu's Continue button (see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
 
@@ -91,6 +91,8 @@ Draw order: ground is -100 to -80, shadows -50, grass tufts -40, trunks 5, cow 1
 
 Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Order in Layer -95 for fills (`SPR_GroundDarkFill`, `SPR_GroundWaterFill`, `SPR_GroundPond`), -80 for decor (`SPR_GroundBush`, `SPR_GroundPuddle`). The bush carries a light-green box around it, so only use it on light-green ground; the puddle carries a dark-green box, so only use it on dark ground.
 
+Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaque dark-green box around the art. Rule: use `SPR_IslandPatch` (same art, transparent corners) wherever a meadow's corner overlaps something. `Meadow_FruitA` uses it because it overlaps the pond; `PondWater` sits at -92 under the meadows.
+
 ## Tuning
 
 | What | Object | Field | Current value |
@@ -101,9 +103,9 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 | Hold-inside margin | Main Camera | SharedCamera > Edge Margin | 0.5 |
 | Shake fade (s) | Main Camera | SharedCamera > Shake Time | 0.25 (`Shake(strength)` is called by `CowRam` on a ram hit, see players.md) |
 | Seconds between moos | MooBubble | MooPrompt > Interval | 6 |
-| Moo fade (s) | MooBubble | MooPrompt > Fade Time | 0.6 |
-| Moo hold (s) | MooBubble | MooPrompt > Hold Time | 1 |
-| Moo strength | MooBubble | MooPrompt > Max Alpha | 0.6 |
+| Moo fade (s) | MooBubble | MooPrompt > Fade Time | 0.2 |
+| Moo hold (s) | MooBubble | MooPrompt > Hold Time | 1.6 |
+| Moo strength | MooBubble | MooPrompt > Max Alpha | 0.95 |
 | Cow | Exit | LevelExit > Cow | Cow's BoxCollider2D |
 | Crow | Exit | LevelExit > Crow | Crow's trigger CircleCollider2D (to set) |
 | Fade image | Exit | LevelExit > Fade | HUD > Fade |
@@ -114,16 +116,17 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 
 ## Gotchas
 
-- With Next Scene empty nothing is saved, so Continue stays hidden until a level with a Next Scene is finished.
+- `Next Scene` is required: `LevelExit` logs `missing nextScene` if it is empty.
 - Any scene loaded by `LevelExit` must be in `File > Build Profiles` scene list, or the load fails. Level1 itself must be added too.
 - The layers and the collision matrix live in shared Project Settings, so changing them affects every scene.
 - The fog area must cover the full range the camera can see: camera centre limits plus half the view on each side (about x -10.7 to 32, y -6 to 6). Bare ground outside the fog area shows no fog.
 - Camera limits assume 16:9. A wider window shows more than 21.35 units per screen, and the clamp won't hide the extra.
+- `HUD > Fade` must stay stretched with 0 offsets. Both scenes once had a +21.25 Pos X override on it (from the prefab), which left an uncovered strip on the left; it was reverted.
 - The fade Image must have Raycast Target off, or it blocks clicks later when menus exist.
 
 ## Not built yet
 
-- FMOD moo. Right now it is only text.
+- Moo sound. Right now it is only text.
 - A solid collider on the crow, and the `Cow` layer, so tree walls stop the crow.
 - The `Snake` object is in Level1 but inactive; snakes live in Level2.
 
@@ -131,13 +134,13 @@ Adding pieces: drag a sprite from the tileset into `Ground` in the Hierarchy. Or
 
 Scene `Assets/Scenes/Level2.unity`, made by copying Level1 (camera, HUD, moo bubble, cow, crow, fog, mist, motes, lights kept). Layout v4 built 23 Nov 2026 by a placement script run through the bridge; tune by hand from here.
 
-What it is: 3 x 3 screens (21.35 x 12 each), map about x -10.7 to 53.4, y 6 to -30. The cow and crow start top-left. A river borders the top and right. From the start a path drifts down-right into the fork clearing, which has a fruit tree in its middle. The short branch runs down the pond's west and south shore to the meeting clearing (4 snakes). The long branch runs along the river past the pond's north shore, through two fruit-tree clearings, and back west to the meeting clearing (2 snakes). The meeting clearing has a fruit tree in its middle. From there the final stretch curves down and runs off the bottom-right edge, where the exit is: 6 chasing snakes and fast fog regrowth. The crow can fly over the pond to a fruit on the island; the cow cannot. A crow that runs out of energy over water drowns (see `players.md`).
+What it is: 3 x 3 screens (21.35 x 12 each), map about x -10.7 to 53.4, y 6 to -30. The cow and crow start top-left. A river borders the top and right. From the start a path drifts down-right into the fork clearing, which has a fruit tree in its middle. The short branch runs down the pond's west and south shore to the meeting clearing (5 snakes). The long branch runs along the river past the pond's north shore, through two fruit-tree clearings, and back west to the meeting clearing (4 snakes). The meeting clearing has a fruit tree in its middle. From there the final stretch curves down and runs off the bottom-right edge, where the exit is: 7 chasing snakes and fast fog regrowth. The crow can fly over the pond to a fruit on the island; the cow cannot. A crow that runs out of energy over water drowns (see `players.md`).
 
 Layout (world coordinates):
 
 | Part | Where | Objects |
 |---|---|---|
-| Start clearing | (-6, -0.2), radius 4 | `Ground > Meadow_Start`; `Clearing` marker is the only `Fog Grid > Open At Start`. Cow (-7, -1), crow (-4.8, 0.2). |
+| Start clearing | (-5.20, 0.84), `Clearing` X scale 8.4 (radius 4.2) | `Ground > Meadow_Start` (`SPR_IslandPatch`, Simple, scale 0.8, 5.44 wide, at (-5.53, -0.64), same size as Level1's); `Clearing` marker is the only `Fog Grid > Open At Start`. Cow (-7, -1), crow (-4.8, 0.2). |
 | Fork clearing | (7.3, -5.1), round meadow 7.1 across | `Ground > Meadow_Fork`, `Tree_Fork` in the middle |
 | Fruit clearing A | (25.5, -1.2), round meadow 7.1 across | `Ground > Meadow_FruitA`, `Tree_FruitA` in the middle |
 | Fruit clearing B | (40.5, -9.5), radius 4.5 | `Ground > Meadow_FruitB`, `Tree_FruitB` in the middle |
@@ -152,7 +155,7 @@ Paths are plain dark ground, like Level1: meadow only at the clearings, the tree
 Ground pieces:
 - `River`: `SPR_GroundPond` (land inside water), Draw Mode Sliced, border 320 px on all sides (set in the Sprite Editor), order -95. Its top and right water bands show; past its right edge (x 51) the dark `GroundFill` reads as forest beyond the river. Two BoxCollider2D on it (top band 65 x 1.6, right band 1.6 x 40.3) and a `Water` component.
 - Clearings: `SPR_GroundMeadowRound`, Sliced, size 2 x radius + 2 (so the rim sits under the ring of trees), order -90.
-- `Pond`: holds the `Water` component and the PolygonCollider2D (scale 1, not a trigger, Default layer, so it blocks the cow and marks water for the crow). Path 0 is the traced outline of the puddle art, 0.2 inside the visible rim; path 1 is a hole of radius 1.6 over the island. The art is the separate object `Ground > PondWater` (not a child, so Pond keeps scale 1): `SPR_GroundPuddle`, Draw Mode Simple, uniform scale 3.2, order -88. Uniform scale keeps the artist's outline from thickening; the 9-slice option (border 140 already set) stretched into a rounded box, and the old 5x / 3.7x stretch made a thick dark ring. If you resize it, scale X and Y the same, then re-trace the collider.
+- `Pond`: holds the `Water` component and the PolygonCollider2D (scale 1, not a trigger, Default layer, so it blocks the cow and marks water for the crow). Path 0 is the traced outline of the puddle art, 0.2 inside the visible rim; path 1 is a hole of radius 1.6 over the island. The art is the separate object `Ground > PondWater` (not a child, so Pond keeps scale 1): `SPR_GroundPuddle`, Draw Mode Simple, uniform scale 3.2, order -92 (below the meadows at -90, so a meadow corner never draws over it). Uniform scale keeps the artist's outline from thickening; the 9-slice option (border 140 already set) stretched into a rounded box, and the old 5x / 3.7x stretch made a thick dark ring. If you resize it, scale X and Y the same, then re-trace the collider.
 - `Island`: `Assets/Sprites/SPR_IslandPatch.png`, Simple, uniform scale 0.63, order -85. It is a copy of the tileset's `SPR_GroundMeadowRound` with the square ground-coloured corners made see-through, so only the scalloped patch shows over the water. Not a SpriteMask: `MistMask` adds an unbounded SpriteMask in Play, which makes other masks show square corners.
 
 Trees (`Walls`, 76 `WallTree` instances, scale 1): each tree's collider is a circle r 1.4 at 1.3 below the tree's position, and its canopy reaches about 6.4 above that collider. Placement rules:
@@ -165,9 +168,9 @@ Fruit trees are never part of a wall: each stands in the middle of its own clear
 
 Fruit trees (`FruitTrees`): `Tree_Fork` PF_Fruit, cooldown 6; `Tree_FruitA`, `Tree_FruitB` PF_FruitQuick (`Fruit > Lifetime` 8), cooldown 0.5; `Tree_Meeting` PF_Fruit, cooldown 0.5. Each tree's position is its clearing centre minus (0, 1.58), which centres its box collider.
 
-Snakes (`Snakes`, scale 0.5, `Dead` = `SPR_SnakeDead`): `Snake_Short0..3` spread across the short branch, `Snake_Long0..1` on the long branch, `Snake_Final0..5` along the final stretch with `Chase Range` 4 and `Chase Speed` 2.1 (cow walks at 3, crow flies at 5). The others have `Chase Range` 0.
+Snakes (`Snakes`, 16, scale 0.5, `Dead` = `SPR_SnakeDead`, Order in Layer 14 so they draw under the cow 15, crow 16, canopies 17 and fog 19, `Obstacles` = Default + Water): staggered so no straight line down a path misses them. `Short0` (4.8, -10.8), `Short1` (11.8, -11.2), `Short2` (6.6, -14.4), `Short3` (14.6, -14.4), `Short4` (9.6, -13.6) on the short branch; `Long0` (33.6, 0.6), `Long1` (36.0, -14.4), `Long2` (16.8, -0.6), `Long3` (27.9, -14.9) on the long branch; `Final0` (22.4, -22.4), `Final1` (26.4, -25.2), `Final2` (23.6, -27.4), `Final3` (30.0, -27.4), `Final4` (31.7, -25.5), `Final5` (34.8, -27.2), `Final6` (39.2, -25.4) along the final stretch with `Chase Range` 4 and `Chase Speed` 2.1 (cow walks at 3, crow flies at 5). The others have `Chase Range` 0. All are in `Tip_Snake > Targets`. Checked in Play: no snake starts blocked, each has 1 unit of free space around it. `Final4` and `Long3` were nudged from the plan to get that. `Final2`, `Final3`, `Final5` are kept off the map's bottom edge (y -30).
 
-Fog: Fog Grid at (21.35, -12), `Area Size` 65.6 x 38.4, `Pixels Per Unit` 12, `Cell Size` 0.4, `Puff Count` 370: a 788 x 461 texture and 15,744 collider cells (Level1 at 16/0.25 would be 1050 x 614 px and 40k colliders here). `FogGrid.Update` measured in the editor at about 2.7 ms idle, 5 ms while clearing; test WebGL. `Fast Regrow Zones` = `FastFogZone` at (33, -27), scale (26, 8, 1), over the final stretch.
+Fog: Fog Grid at (21.35, -12), `Area Size` 65.6 x 38.4, `Pixels Per Unit` 12, `Cell Size` 0.4, `Puff Count` 370: a 788 x 461 texture and 15,744 cells (Level1 at 16/0.25 would be 1050 x 614 px and 40k cells here) and an 11 x 11 collider pool. `FogGrid.Update` measured in the editor at about 2.7 ms idle, 5 ms while clearing; test WebGL. `Fast Regrow Zones` = `FastFogZone` at (33, -27), scale (26, 8, 1), over the final stretch.
 
 Checked through the bridge (23 Nov, v4): a 1.9 x 1.0 box (bigger than the cow) gets from the start to the exit through each branch alone; a 0.8 probe can't reach the exit with both branches cut and can't reach the island. In Play mode the crow eats the island fruit, sits on the island at zero energy without drowning, and drowns at zero energy over open water. No console errors.
 
@@ -177,9 +180,9 @@ Tuning (Level2 values):
 |---|---|---|---|
 | Camera limits | Main Camera | SharedCamera > Min Position / Max Position | (0, -24) / (42.7, 0) |
 | Fog area | Fog Grid | FogGrid > Area Size / Pixels Per Unit / Cell Size | 65.6 x 38.4 / 12 / 0.4 |
-| Start and tree clearings | Fog Grid | FogGrid > Open At Start | Clearing + 4 `TreeClearings` children, X scale 14 |
+| Start and tree clearings | Fog Grid | FogGrid > Open At Start | Clearing + 4 `TreeClearings` children, X scale 14, each at its meadow's position |
 | Final-stretch regrow | Fog Grid | FogGrid > Fast Regrow Zones | FastFogZone |
-| Final snakes chase | Snake_Final0..5 | Snake > Chase Range / Chase Speed | 4 / 2.1 |
+| Final snakes chase | Snake_Final0..6 | Snake > Chase Range / Chase Speed | 4 / 2.1 |
 | Crow energy | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 (a full bar is 25 s of flight, a fruit 7.5 s) |
 | Fork tree cooldown | Tree_Fork | FruitTree > Cooldown | 6 |
 | Long-path fruit life | PF_FruitQuick | Fruit > Lifetime | 8 |
@@ -201,14 +204,14 @@ Decoration only, no colliders, no scripts:
 ### Level1
 - Start area (23 Nov): wall trees moved straight up or down (away from the patch, rows keep their x) until their collider and sprites clear the round patches: `Top_00` +0.35, `Top_02` +1.6, `Bottom_03` -0.1, `Top_08` +1.4, `Top_14` +3.1, `Top_16` +0.65 (y). Neighbour gaps did not grow past 1.6 anywhere they were not already that wide. Six `BackgroundTrees` and 14 `Darkness` puffs that the move uncovered next to the patches were deleted (Darkness now 131 puffs, BackgroundTrees 94).
 - Thicker fog: `Fog Grid > Fog Color` alpha 0.7 to 1, `Thin Alpha` 0.45 to 1; every `Darkness` puff colour alpha 0.6 to 0.8 (per-renderer colour, no material change). `Clear Radius` 2 to 3 (see `fog.md`; cow collider 1.6 x 0.8, so the cleared path is about 4 wide).
-- `Tutorial` (root): three SpriteRenderers, order 23 (above fog 19, mist 21 and motes 22), tinted plum #2E1A2B because white art vanishes on the white fog. Sprites cut from `Assets/Art/Title/cow and crow controls.png` (extra slices `controls_cow` (0,232,523,403), `controls_crow` (586,230,521,405), `controls_space` (228,0,652,194); the older `controls_0` to `_8` slices are kept). Start camera sees x -5.1 to 16.2, y -6 to 6. `controls_cow` at (-2.7, 1.3), `controls_space` at (-2.7, -1.7) (left of the start clearing), `controls_crow` at (12.0, -1.2) (right), scale 0.55, 0.45 and 0.55 (key clusters about 2.2 tall, a fifth of the screen).
-- `Clearing2` moved to (21.63, 0.38), X scale 14 (was (21.6, -0.12), 14.4). `Meadow2` is the round meadow described above. `Meadow1` and `Clearing` unchanged.
+- `Tutorial` (root): three SpriteRenderers (controls drawings, plum tint, order 23, wobbling `M_Scribble` material) and the tutorial signs. See `tutorial.md`.
+- `Clearing2` at (21.63, 0.38), X scale 14. `Meadow2` is the round meadow described above. `Clearing` moved onto `Meadow1` (4.64, -0.30) so the fog clearing and the meadow match.
 - Crow energy was 10, then 35, now 15. Route from start to `Exit` is 27.6 units for the cow; fog on it: 10.6 units before the tree clearing and 6.4 after (17 total). At 15 per second one bar is about 33 units of flight, so the first stretch is easy and the second needs a fruit or two (each fruit, 30, is 10 units). The crow only drains while moving, so hovering is free.
 
 ### Level2
-- `TreeClearings` (root) holds `Clearing_TreeFork`, `_TreeFruitA`, `_TreeFruitB`, `_TreeMeeting` at the four meadow centres, X scale 14, all in `Fog Grid > Open At Start` after `Clearing`.
+- `TreeClearings` (root) holds `Clearing_TreeFork`, `_TreeFruitA`, `_TreeFruitB`, `_TreeMeeting` at the four meadow centres (snapped to the meadows' live positions), X scale 14, all in `Fog Grid > Open At Start` after `Clearing` (now at `Meadow_Start`, (-5.20, 0.84)).
 - `Ground > Meadow_Fork`, `_FruitA`, `_FruitB`, `_Meeting`: now `SPR_GroundMeadowRound`, Draw Mode Simple, scale 1.4 (round, about 7.1 across), order -90. `Meadow_Start` unchanged. 12 grass tufts moved inside the new circles (radius 2 from the tree).
-- Pond and island: see the Pond and Island lines under "Ground pieces". `PondMask` and the plain `SPR_Circle` pond/island shapes are gone; `SPR_Circle.png` is now only used by the shadows.
+- Pond and island: see the Pond and Island lines under "Ground pieces". `PondMask` and the plain `SPR_Circle` pond/island shapes are gone; `SPR_Circle.png` is deleted; shadows use `SPR_ShadowBlob`.
 - Tree positions moved to centre them on the paths: `Tree_Fork`, `Clearing_TreeFork`, `Meadow_Fork` and its 3 tufts moved +1.0 in X (clearing now (7.3, -5.1)). `Tree_Meeting`, `Clearing_TreeMeeting`, `Meadow_Meeting` and its 3 tufts moved by (+2.8, -0.3) (clearing now (21.8, -17.8), the middle of the three paths).
 - Clip fix: the permanent fog clearing is 7 units in radius, bigger than the wall ring, so gaps between wall trunks that fog used to fill are open there. `Walls > Tree_PatchFruitB` (WallTree, (33.9, -7.4)) closes a 0.95 slit between `Tree_36` and `Tree_68` on the west side of the FruitB clearing, which let the cow into the forest behind the trees. Still-open slits outside any permanent clearing (fog covers them until the crow clears it): `Tree_0`/`Tree_62` (0.9), `Tree_8`/`Tree_9` (1.7), `Tree_17`/`Tree_18` and `Tree_64` (1.5 to 1.75).
 - Checked: cow box reaches the exit through the short branch alone and the long branch alone; not with both cut.

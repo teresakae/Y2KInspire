@@ -38,14 +38,11 @@ Shader "Cowncrow/TreeSway"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/ShapeLightShared.hlsl"
 
             #pragma multi_compile_instancing
-            #pragma multi_compile _ DEBUG_DISPLAY
-            #pragma multi_compile _ SKINNED_SPRITE
 
             struct Attributes
             {
                 COMMON_2D_INPUTS
                 half4 color : COLOR;
-                UNITY_SKINNED_VERTEX_INPUTS
             };
 
             struct Varyings
@@ -73,7 +70,6 @@ Shader "Cowncrow/TreeSway"
 
             Varyings LitVertex(Attributes input)
             {
-                UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 

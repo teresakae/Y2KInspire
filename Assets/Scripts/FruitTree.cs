@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 /// <summary>When the cow rams it, a hanging fruit falls straight down to the ground below the trunk, and the canopy shakes.</summary>
 public class FruitTree : MonoBehaviour
@@ -9,7 +10,7 @@ public class FruitTree : MonoBehaviour
     [SerializeField] private float dropBelow = 2f;
     [Tooltip("Seconds before the next hit counts. Stops one dash dropping many.")]
     [SerializeField] private float cooldown = 0.5f;
-    [Tooltip("Fruit sprites hanging on the canopy (children of Canopy). Each ram hides one and drops a real fruit; when all are gone the tree only shakes. Empty = unlimited drops.")]
+    [Tooltip("Fruit sprites hanging on the canopy (children of Canopy). Each ram hides one and drops a real fruit; when all are gone the tree only shakes.")]
     [SerializeField] private GameObject[] hangingFruit;
     [Tooltip("The canopy child to shake. Empty = shake the whole tree.")]
     [SerializeField] private Transform shakeTarget;
@@ -22,6 +23,10 @@ public class FruitTree : MonoBehaviour
     [Tooltip("Seconds after a hanging fruit is picked before it grows back on the canopy. 0 = never.")]
     [SerializeField] private float regrowTime = 20f;
 
+    [Tooltip("Runs when a fruit drops. Passes the fallen fruit. Used by tutorial tips.")]
+    [SerializeField] private UnityEvent<Transform> onDrop;
+
+    SpriteRenderer canopy;   // the shaken child's sprite, for CanopyCovers
     Vector3 basePos;
     float nextHit, shakeTimer;
     float[] regrowAt;   // time each hanging fruit is due back, parallel to hangingFruit; 0 = not waiting
@@ -31,7 +36,8 @@ public class FruitTree : MonoBehaviour
         if (fruitPrefab == null) Debug.LogError($"{name}: missing Fruit Prefab");
         if (shakeTarget == null) shakeTarget = transform;
         basePos = shakeTarget.localPosition;
-        regrowAt = new float[hangingFruit == null ? 0 : hangingFruit.Length];
+        canopy = shakeTarget.GetComponent<SpriteRenderer>();
+        regrowAt = new float[hangingFruit.Length];
     }
 
     public void Hit()
@@ -40,16 +46,22 @@ public class FruitTree : MonoBehaviour
         nextHit = Time.time + cooldown;
         shakeTimer = shakeTime;
         if (fruitPrefab == null) return;
-        Vector3 from = transform.position;   // no hanging fruit set up: drops from the trunk, unlimited
-        if (hangingFruit != null && hangingFruit.Length > 0)
-        {
-            GameObject f = TakeHangingFruit();
-            if (f == null) return;   // empty tree still shakes, drops nothing
-            from = f.transform.position;
-        }
+        GameObject f = TakeHangingFruit();
+        if (f == null) return;   // empty tree still shakes, drops nothing
         // Falls straight down from where it hung, so it lands in front of the trunk.
-        GameObject fruit = Instantiate(fruitPrefab, from, Quaternion.identity);
+        GameObject fruit = Instantiate(fruitPrefab, f.transform.position, Quaternion.identity);
         fruit.GetComponent<Fruit>().Fall(transform.position.y - dropBelow);
+        onDrop.Invoke(fruit.transform);
+    }
+
+    /// <summary>True when p is under the canopy: inside the ellipse that fits its sprite bounds, grown by margin. Snakes use it to stay out from under leaves.</summary>
+    public bool CanopyCovers(Vector2 p, float margin)
+    {
+        if (canopy == null) return false;
+        Bounds b = canopy.bounds;
+        Vector2 d = p - (Vector2)b.center;
+        float x = d.x / (b.extents.x + margin), y = d.y / (b.extents.y + margin);
+        return x * x + y * y < 1f;
     }
 
     // Hides the next hanging fruit and returns it. Null when none are left.

@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using UnityEngine.Video;
 
-/// <summary>Plays the opening video, then loads the first level. Any key, or the Skip button, skips it.</summary>
+/// <summary>Plays the opening video while the first level loads behind it, then fades to white and switches. Any key, or the Skip button, skips it.</summary>
 [RequireComponent(typeof(VideoPlayer))]
 public class Intro : MonoBehaviour
 {
@@ -12,8 +13,18 @@ public class Intro : MonoBehaviour
     [Tooltip("Scene loaded when the video ends or is skipped. Must be in File > Build Profiles scene list.")]
     [SerializeField] private string nextScene = "Level1";
 
+    [Tooltip("Full-screen white Image on top of everything, alpha 0, Raycast Target off. Only its alpha is changed.")]
+    [SerializeField] private Image fade;
+    [Tooltip("Seconds for the fade to white when leaving.")]
+    [SerializeField] private float fadeTime = 0.5f;
+
+    // Caps one frame's fade step so a slow frame cannot jump the fade.
+    const float maxFadeStep = 0.05f;
+
     VideoPlayer video;
+    AsyncOperation load;
     bool leaving;
+    float alpha;
 
     void Awake()
     {
@@ -26,10 +37,37 @@ public class Intro : MonoBehaviour
         video.Play();
     }
 
+    void Start()
+    {
+        if (fade == null) Debug.LogError($"{name}: missing fade");
+        // Level1 loads behind the video; it only switches on once we are fully white.
+        load = SceneManager.LoadSceneAsync(nextScene);
+        if (load != null) load.allowSceneActivation = false;
+    }
+
     void Update()
     {
+        if (leaving)
+        {
+            alpha = Mathf.MoveTowards(alpha, 1f, Mathf.Min(Time.deltaTime, maxFadeStep) / fadeTime);
+            SetAlpha();
+            if (alpha >= 1f)
+            {
+                enabled = false;   // don't ask twice
+                if (load != null) load.allowSceneActivation = true;
+            }
+            return;
+        }
         bool key = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
         if (key) Leave();
+    }
+
+    void SetAlpha()
+    {
+        if (fade == null) return;
+        Color c = fade.color;
+        c.a = alpha;
+        fade.color = c;
     }
 
     // The Skip button calls this (After Pop).
@@ -37,6 +75,6 @@ public class Intro : MonoBehaviour
     {
         if (leaving) return;
         leaving = true;
-        SceneManager.LoadScene(nextScene);
+        if (fade == null && load != null) load.allowSceneActivation = true;   // no fade to wait for
     }
 }

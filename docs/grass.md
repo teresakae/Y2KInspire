@@ -11,6 +11,7 @@ Small dark grass tufts scattered on the ground that sway in the same wind that d
 - Material: `Assets/Materials/M_GrassSway.mat`
 - Prefab: `Assets/Prefabs/PF_GrassTuft.prefab` (one SpriteRenderer, no script). Sorting Order -40: above ground (-100 to -80) and shadows (-50), below trunks (5), the animals and the fog (19).
 - Scene: `Grass` in `Level1`, 20 tufts in 4 clumps (two in the start clearing, one in clearing 2, one in the fog corridor between). Mixed sprites, random Flip X, scale 0.6 to 0.85. Hand placed, so move them freely.
+- Scene: `Grass` in `Level2`, 110 tufts: the original 15 plus 95 (`GrassTuft16` to `GrassTuft110`) spread over the whole walkable ground. Placed by a one-off bridge script: ground reachable from the cow's start (flood fill, 0.5 grid, a tuft's 0.8 radius clear of trunks and water), not under a canopy (ellipse grown 10%), not within 1.2 of a snake, one clump (1 to 3 tufts, mostly 1) per 4 x 4 unit cell with a random spot, at least 2 between clump centres, 0.45 to 0.9 within a clump. Mixed sprites, random Flip X, scale 0.6 to 0.85. Free to move by hand; delete the extras to thin it.
 - Wind: `Fog Grid > Fog Grid > Wind` (`FogGrid.cs`, global `_FogWind`).
 
 ## How it works

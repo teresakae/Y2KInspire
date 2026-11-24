@@ -18,9 +18,6 @@ public class TreeLook : MonoBehaviour
     [SerializeField, Tooltip("Canopy's local Y above the trunk, min (x) to max (y). Set by eye: look at Canopy > Transform > Position Y now and pick a range around it.")]
     private Vector2 canopyHeight = new Vector2(1.5f, 2.5f);
 
-    [SerializeField, Tooltip("Each sprite is mirrored at random, independently.")]
-    private bool randomFlip = true;
-
     // Awake, not Start: the canopy must be placed before FruitTree.Start caches its shake position, in case this ever goes on a fruit tree.
     // ponytail: the look is picked at Play, so the Scene view shows the prefab's default sprites. Previewing in the editor would need editor-only code.
     // ponytail: the seed comes from the position, so moving a tree changes its look.
@@ -43,12 +40,19 @@ public class TreeLook : MonoBehaviour
         p.y = Random.Range(canopyHeight.x, canopyHeight.y);
         canopy.transform.localPosition = p;
 
-        if (randomFlip)
-        {
-            trunk.flipX = Random.value < 0.5f;
-            canopy.flipX = Random.value < 0.5f;
-        }
+        trunk.flipX = Random.value < 0.5f;
+        canopy.flipX = Random.value < 0.5f;
 
         Random.state = oldState;   // don't disturb other scripts' randomness
+    }
+
+    /// <summary>True when p is under the canopy: inside the ellipse that fits its sprite bounds, grown by margin. Snakes use it to stay out from under leaves.</summary>
+    public bool CanopyCovers(Vector2 p, float margin)
+    {
+        if (canopy == null) return false;
+        Bounds b = canopy.bounds;
+        Vector2 d = p - (Vector2)b.center;
+        float x = d.x / (b.extents.x + margin), y = d.y / (b.extents.y + margin);
+        return x * x + y * y < 1f;
     }
 }

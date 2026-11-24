@@ -61,6 +61,7 @@ public class CowRam : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale == 0f) return; // paused
         var kb = Keyboard.current;
         if (kb == null) return;
 

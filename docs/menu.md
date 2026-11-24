@@ -8,7 +8,8 @@ The first screen: a painted title picture with a column of buttons on the left. 
 
 ## Where it lives
 
-- Scripts: `Assets/Scripts/MainMenu.cs` (on the Canvas) and `Assets/Scripts/ButtonPop.cs` (on every button).
+- Scripts: `Assets/Scripts/MainMenu.cs` (on the Canvas), `Assets/Scripts/ButtonPop.cs` (on every button), `Assets/Scripts/SettingsPanel.cs` (on the settings panel prefab), `Assets/Scripts/PauseMenu.cs` (on `PF_HUD`).
+- Prefab: `Assets/Prefabs/PF_SettingsPanel.prefab`, used in MainMenu and in `PF_HUD > PauseScreen`.
 - Shader: `Assets/Shaders/TitleFloat.shader`. One material per art layer in `Assets/Materials/M_Title*.mat`.
 - Art: `Assets/Art/Title` (layers, button sheet `cow and crow ui.png`, font `Kkscribble-Regular.ttf`, TMP font `Kkscribble SDF.asset`).
 - Post-processing: `Assets/Settings/VP_Title.asset`, on `Global Volume` in the scene.
@@ -17,16 +18,17 @@ The first screen: a painted title picture with a column of buttons on the left. 
 
 ## How it works
 
-1. `Start`: checks the references (LogError if one is missing), sets the toggle from `Screen.fullScreen`, loads the saved volume into the slider and applies it. The UI is set with `...WithoutNotify`, so this does not trigger the change events.
-2. Each button's `OnClick` calls `ButtonPop.Pop()`; the real method (`StartGame` etc.) sits in that button's `ButtonPop > After Pop` list, so it runs after the squash. The Toggle and Slider use their `On Value Changed` lists, in the Dynamic section (`SetFullscreen`, `SetVolume`), so the value is passed through.
-3. Volume sets `AudioListener.volume` and saves. FMOD is not wired, so this does not affect FMOD audio yet: route it to an FMOD bus when audio arrives.
+1. `MainMenu.Start`: checks the `Settings Panel` reference (LogError if missing) and applies the saved volume to `AudioListener.volume` (the panel starts inactive, so its own script has not run yet).
+   `SettingsPanel.OnEnable` (each time the panel opens): checks its references, sets the toggle from `Screen.fullScreen` and the slider from the saved volume. The UI is set with `...WithoutNotify`, so this does not trigger the change events.
+2. Each button's `OnClick` calls `ButtonPop.Pop()`; the real method (`StartGame` etc.) sits in that button's `ButtonPop > After Pop` list, so it runs after the squash. The panel's Toggle and Slider use their `On Value Changed` lists, in the Dynamic section (`SettingsPanel.SetFullscreen`, `SettingsPanel.SetVolume`), so the value is passed through.
+3. Volume sets `AudioListener.volume` (master volume for every AudioSource) and saves.
 
 PlayerPrefs keys:
 
 | Key | Type | Written by | Meaning |
 |---|---|---|---|
-| `SavedLevel` | string | `LevelExit` | Scene name of the level reached. Start loads it unless it is empty or equals `MainMenu > End Scene` (`HomeScreen`, which a finished game saves); then Start loads `First Level`. |
-| `Volume` | float 0-1 | `MainMenu.SetVolume` | Master volume. Default 1. |
+| `SavedLevel` | string | `LevelExit`, `PauseMenu.SaveAndQuit` | Scene name of the level reached. Start loads it unless it is empty or equals `MainMenu > End Scene` (`HomeScreen`, which a finished game saves); then Start loads `First Level`. |
+| `Volume` | float 0-1 | `SettingsPanel.SetVolume` | Master volume. Default 1. |
 
 Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist otherwise. To reset the save while testing: `Edit > Clear All PlayerPrefs`.
 
@@ -35,13 +37,15 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 `Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `MainMenu > First Level` is `Intro`, so Start goes here when there is no save; with a save, Start skips it and loads the saved level.
 
 - Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
-- When the video ends, any key is pressed, or the `SkipButton` is clicked, it loads `Intro > Next Scene` (default `Level1`). If the video fails to load it logs an error and loads Level1 straight away.
+- `Start` begins loading `Intro > Next Scene` (default `Level1`) in the background with activation held, so the level is ready behind the video. When the video ends, any key is pressed, or the `SkipButton` is clicked, `Leave()` starts a fade to white (`Canvas > Fade`, `Fade Time` 0.5 s, step capped at 0.05 s per frame); at full white the loaded scene switches on. Input is ignored once leaving. If the video fails to load it logs an error and leaves the same way. No `Fade` Image = logs an error and switches at once.
 - The camera background is white, so letterbox bars match the video's white frames.
+- `Canvas > Fade`: full-screen white Image, alpha 0, Raycast Target off, last sibling so it covers `SkipButton`; wired to `Main Camera > Intro > Fade`.
 - Skip button: `Canvas > SkipButton` (Overlay canvas 1920x1080 match 0.5, with an EventSystem), anchored bottom right, 40 px margin, 260 x 90, styled like the menu buttons (light slice, dark on hover and press, label "skip" in `Kkscribble SDF` 48, plum). `Button > OnClick` = `ButtonPop.Pop`; `ButtonPop > After Pop` = `Main Camera > Intro.Leave` (public). A mouse click elsewhere does nothing.
 
 | What | Field | Value |
 |---|---|---|
 | Video file | `Main Camera > Intro > File Name` | `intro_white.mp4` |
+| Fade to white (s) | `Main Camera > Intro > Fade Time` | 0.5 |
 | Scene after | `Main Camera > Intro > Next Scene` | `Level1` |
 
 Gotchas:
@@ -52,15 +56,32 @@ Gotchas:
 
 `Assets/Scripts/HomeScreen.cs` is on the Canvas of `Assets/Scenes/HomeScreen.unity` (build index 4, reached from Level2's exit). Field `Menu Scene` (default `MainMenu`). One public method, `BackToMenu()`, loads it; wire it to the scene's button OnClick. It leaves `PlayerPrefs` alone, so Start still resumes the save (Start ignores a `HomeScreen` save, see `MainMenu > End Scene`). The scene must be in `File > Build Profiles`.
 
-## Public methods
+## Settings panel (shared)
+
+Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its root. One copy in `MainMenu > Canvas` (Pos X 280) and one in `PF_HUD > PauseScreen`. Contents: controls card, fullscreen toggle, volume slider, Back button. Fields: `Fullscreen Toggle`, `Volume Slider` (Min 0, Max 1).
+
+| Method | Wire it to |
+|---|---|
+| `SetFullscreen(bool)` | Toggle On Value Changed, Dynamic bool |
+| `SetVolume(float)` | Slider On Value Changed, Dynamic float |
+| `Close()` | Back button, `ButtonPop > After Pop` (hides the panel; in the pause screen this also resumes, see Pause) |
+
+## Pause
+
+`PauseMenu` is on the `PF_HUD` root, so both levels have it. Esc or P toggles it (P too, because browsers use Esc to leave fullscreen). Pausing sets `Time.timeScale` 0 and shows `PF_HUD > PauseScreen` (plum dim, alpha about 60%) with a `PF_SettingsPanel` inside. The panel has two buttons, both 460 wide here (Back is 360 in the main menu). `Back` resumes (same as Esc/P again). `Save and quit` exists only here: a `QuitButton` added to the `PF_SettingsPanel` instance inside `PF_HUD`, with `ButtonPop > After Pop` = `PauseMenu.SaveAndQuit`. The main menu's panel does not have it. `SaveAndQuit()` writes the current level's scene name to `SavedLevel` and loads `Menu Scene`. Start then begins that level again from its start (Level1 without the intro video); the spot inside the level is not saved. Fields: `Pause Screen`, `Settings Panel` (the panel inside it), `Menu Scene` (default `MainMenu`, must be in `File > Build Profiles`).
+
+A browser refresh goes to the menu, and Start resumes the saved level. Only `LevelExit` and Save and quit write `SavedLevel`, so closing the tab mid-level keeps the last save.
+
+- `PlayerControl`, `CowRam` and `SharedCamera` return early while `Time.timeScale` is 0. `ButtonPop` uses unscaled time, so button squashes still play.
+- `Scribble.shader` uses `_Time`, so the key drawings freeze while paused.
+- `PauseMenu.OnDestroy` sets `timeScale` back to 1, because it survives scene loads.
+
+## MainMenu public methods
 
 | Method | Wire it to |
 |---|---|
 | `StartGame()` | Start button After Pop |
-| `OpenSettings()` | Settings button OnClick |
-| `CloseSettings()` | Back button OnClick |
-| `SetFullscreen(bool)` | Toggle On Value Changed, Dynamic bool |
-| `SetVolume(float)` | Slider On Value Changed, Dynamic float |
+| `OpenSettings()` | Settings button After Pop |
 
 ## Scene
 
@@ -75,7 +96,7 @@ EventSystem (InputSystemUIInputModule)
 Canvas (Overlay, scale 1920x1080 match 0.5, MainMenu script)
   Buttons (top left, VerticalLayoutGroup + ContentSizeFitter)
     StartButton, SettingsButton, CreditsButton
-  SettingsPanel (inactive; VerticalLayoutGroup)
+  SettingsPanel (PF_SettingsPanel instance, inactive, Pos X 280; VerticalLayoutGroup)
     ControlsText, FullscreenToggle, VolumeRow (VolumeLabel, VolumeSlider), BackButton
   CreditsPanel (inactive)
     CreditsTitle, CreditsText, BackButton
@@ -89,11 +110,11 @@ Buttons use slices of `cow and crow ui.png` (`cow and crow ui_N`):
 |---|---|---|
 | 0, 2, 4 | long button, light | Start/Credits/Intro Skip (0), Settings and both Back buttons (4), 2 unused |
 | 1, 3, 5 | long button, dark (same row as 0, 2, 4) | hover and pressed sprite of the matching light one |
-| 6 | small square, light | toggle box, slider handle |
+| 6 | small square, light, 50 px 9-slice borders | toggle box, slider handle, moo bubble Body and Tail, tutorial `Sign` |
 | 7 | slider track | slider Background |
 | 8 | small square, dark | toggle checkmark |
 | 9 | cream strip | slider Fill |
-| 10 | big panel | Settings and Credits panels |
+| 10 | big panel | Credits panel |
 
 Button setup: Image = light slice, Button Transition = Sprite Swap with Highlighted and Pressed = dark slice, Selected and Disabled = light slice. Label: TMP, `Kkscribble SDF`, plum #2E1A2B, size 56. `ButtonPop` on the button; Button `OnClick` = `ButtonPop.Pop`; real action in `After Pop`:
 
@@ -101,12 +122,12 @@ Button setup: Image = light slice, Button Transition = Sprite Swap with Highligh
 |---|---|
 | Start / Settings | `MainMenu.StartGame` / `OpenSettings` |
 | Credits | `CreditsPanel.SetActive(true)` |
-| Settings Back | `MainMenu.CloseSettings` |
+| Settings Back | `SettingsPanel.Close` (the panel's own) |
 | Credits Back | `CreditsPanel.SetActive(false)` |
 
 Credits text is placeholder: edit `CreditsPanel > CreditsText`.
 
-`SettingsPanel` and `CreditsPanel` are 920x900, shifted 280 right of centre (`Rect Transform > Pos X` 280) so they don't cover the title lettering.
+The settings panel and `CreditsPanel` are 920x900, shifted 280 right of centre (`Rect Transform > Pos X` 280) so they don't cover the title lettering.
 
 ## Tuning
 
@@ -143,7 +164,6 @@ Swapping the title lettering: put a new sprite on `TitleArt > Title > SpriteRend
 
 ## Not built yet
 
-- Volume routed to an FMOD bus.
 - A way to start over once a save exists (no "reset save" button; use `Edit > Clear All PlayerPrefs`).
 
 ## Home screen scene

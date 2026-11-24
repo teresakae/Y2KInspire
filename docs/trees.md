@@ -10,12 +10,12 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 - Scripts: `Assets/Scripts/FruitTree.cs` (on each tree), `Assets/Scripts/Fruit.cs` (on the fruit prefab). The ram itself is `CowRam.cs`, see `players.md`.
 - Prefab: `Assets/Prefabs/PF_Fruit`.
-- Scene: `Tree` in `Assets/Level1.unity`, at (21.6, -1.2), in clearing 2. Trunk sprite `cow and crow trees_4` (order 5, under the fog); child `Shadow` (soft blob, order -50, see "Tree shadow"); child `Canopy`, sprite `cow and crow trees_1` (order 17), local position (0.06, 2.6) so it sits on the trunk; the canopy has three children `HangingFruit1` to `HangingFruit3` (sprite `fruit`, order 18). They shake with the canopy.
+- Scene: `Tree` in `Assets/Scenes/Level1.unity`, at (21.6, -1.2), in clearing 2. Trunk sprite `cow and crow trees_4` (order 5, under the fog); child `Shadow` (soft blob, order -50, see "Tree shadow"); child `Canopy`, sprite `cow and crow trees_1` (order 17), local position (0.06, 2.6) so it sits on the trunk; the canopy has three children `HangingFruit1` to `HangingFruit3` (sprite `fruit`, order 18). They shake with the canopy.
 
 ## How it works
 
 1. The cow dashes into the tree's collider. `CowRam` checks its charge and calls `FruitTree.Hit(charge)`.
-2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. If `Hanging Fruit` has entries, each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. If `Hanging Fruit` is empty, the fruit falls from the trunk centre instead (unlimited drops). When all are hidden the tree only shakes and drops nothing. A hidden hanging fruit grows back on the canopy `Regrow Time` seconds after it was picked (`FruitTree.Update` checks a due time per fruit).
+2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. Each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. When all are hidden the tree only shakes and drops nothing. A hidden hanging fruit grows back on the canopy `Regrow Time` seconds after it was picked (`FruitTree.Update` checks a due time per fruit).
 3. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
 3b. If `Fruit > Lifetime` is above 0, a timer starts once the fruit is on the ground (after landing if it fell, from the first frame if placed on the ground). Over the last `Fade Time` seconds its sprite alpha drops to 0, then it is destroyed. 0 = stays forever.
 4. The crow touches the fruit's trigger: `Fruit` calls `CrowEnergy.Eat(Energy)` and destroys itself. The cow's touch is ignored.
@@ -27,7 +27,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 3. Add a child `Canopy` with the canopy sprite (order 17, above the trunk's 5 and the animals). No collider. Add the `Shadow` child too (see "Tree shadow").
 4. Add `FruitTree` to `Tree`. Set `Fruit Tree > Fruit Prefab` to `Assets/Prefabs/PF_Fruit`.
 5. Drag `Canopy` into `Fruit Tree > Shake Target`.
-   Optional: add sprite children on `Canopy` (order 18) and drag them into `Fruit Tree > Hanging Fruit` to limit the drops to that many.
+   Add sprite children on `Canopy` (order 18) and drag them into `Fruit Tree > Hanging Fruit`; the tree drops that many fruit at a time.
 6. Select the tree to see the drop radius as a wire circle in the Scene view.
 
 ## Making the fruit prefab
@@ -42,7 +42,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 | What | Object | Field | Current value |
 |---|---|---|---|
 | Fruit prefab | Tree | FruitTree > Fruit Prefab | PF_Fruit |
-| Hanging fruit (drops available) | Tree | FruitTree > Hanging Fruit | HangingFruit1, 2, 3 (3 drops; empty = unlimited) |
+| Hanging fruit (drops available) | Tree | FruitTree > Hanging Fruit | HangingFruit1, 2, 3 (3 drops; every fruit tree needs this list) |
 | Fruit fall speed-up | PF_Fruit | Fruit > Gravity | 30 |
 | Fruit bounce height | PF_Fruit | Fruit > Bounce | 0.15 (0 = no bounce) |
 | Fruit order while falling | PF_Fruit | Fruit > Falling Order | 20 |
@@ -50,6 +50,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 | Drop distance below trunk centre | Tree | FruitTree > Drop Below | 2 (default; trunk `_4` is about 3.1 tall, so its base is 1.55 below) |
 | Dropped fruit look | PF_Fruit | Sprite Renderer > Sprite | `fruit_cut` (hanging fruit keep `fruit`) |
 | Time between hits | Tree | FruitTree > Cooldown | 0.5 (default) |
+| Runs when a fruit drops | Tree | FruitTree > On Drop | UnityEvent passing the fallen fruit's Transform. Level1 only wires it to the tutorial tips (`TutorialTip.Done`), see `tutorial.md` |
 | Hanging fruit regrow | Tree | FruitTree > Regrow Time | 20 seconds (default, all trees including PF_Fruit and PF_FruitQuick ones; 0 = never) |
 | Canopy to shake | Tree | FruitTree > Shake Target | Canopy |
 | Trunk collider | Tree | BoxCollider2D > Size / Offset | (2.2, 0.6) / (0.03, 0.3) |
@@ -104,9 +105,11 @@ Wall trees are the forest edge: decoration that is also a wall. They block the c
 ## How it works
 
 1. At `Awake`, `TreeLook` seeds Unity's random from the tree's world position, so a tree looks the same every Play.
-2. It picks a trunk from `Trunks` and a canopy from `Canopies`, sets the canopy's local Y between the two values of `Canopy Height`, and (if `Random Flip`) mirrors the trunk and canopy independently.
+2. It picks a trunk from `Trunks` and a canopy from `Canopies`, sets the canopy's local Y between the two values of `Canopy Height`, and mirrors the trunk and canopy independently.
 3. It restores the previous random state, so other scripts (`FogGrid`) are not disturbed.
 4. The collider on the root is the wall. `TreeLook` never touches it.
+
+`CanopyCovers(Vector2 p, float margin)` (public, on `TreeLook` and on `FruitTree`): true when p is inside the ellipse of the canopy sprite's bounds grown by `margin` (`FruitTree` uses its `Shake Target`'s SpriteRenderer, cached in Start). `Snake` uses it to keep snakes out from under leaves, passing its `Body Radius` as margin. Note `TreeLook` moves the canopy in Awake, so the answer is only right in Play.
 
 ## Adding a wall tree
 
@@ -135,7 +138,6 @@ The fruit tree `Tree` uses the same sheet: trunk `_4` (order 5), a `Shadow` chil
 | Trunk sprites | WallTree prefab root | TreeLook > Trunks | `_2`, `_3`, `_2`, `_3`, `_4` (a sprite listed twice is picked twice as often, so `_4`, the trunk with the hole, shows on about 1 tree in 5) |
 | Canopy sprites | WallTree prefab root | TreeLook > Canopies | `_0`, `_1`, `_5` |
 | Canopy height | WallTree prefab root | TreeLook > Canopy Height | 2 to 3.2 (lower lets the canopy hide its trunk) |
-| Mirror at random | WallTree prefab root | TreeLook > Random Flip | on |
 | Wall shape | WallTree prefab root | CircleCollider2D > Radius / Offset | 2.7 / (0, 2.6) |
 | Draw order | Trunk / Canopy | SpriteRenderer > Order in Layer | 5 / 17 (fog 10 covers trunks; characters 15 and 16 sit in front of trunks and behind canopies) |
 | Shadow | Shadow | Transform > Position / Scale, SpriteRenderer > Color / Order in Layer | (0, -1.35) / (5.5, 1.5); dark olive (0.23, 0.30, 0.11) alpha 0.4; -50 |
