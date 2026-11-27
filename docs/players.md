@@ -35,7 +35,7 @@ Juice (all in `CowRam`, strength scales with the charge): while dashing the cow 
 `CowRam` on the cow. Hold Space (`Ram Key`) to charge, release to dash. Order of events:
 
 1. Space pressed: charge = 0, velocity zero, `PlayerControl.aimOnly` = true. `PlayerControl` stays on but only reads keys: WASD still updates `lastDir` (8-way) and the facing sprite, and sets no velocity, so the cow stands still and can re-aim while charging.
-2. Held: charge rises 0 to 1 over `Charge Time`. The cow squashes: Y scale lerps toward `Squash`, X grows by `(1 - Squash) * charge`. The frame the charge crosses `Min Charge` (once per charge) is the ready cue: the cow tints toward `Ready Flash Color`, fading over `Ready Flash Time`.
+2. Held: charge rises 0 to 1 over `Charge Time`. The cow squashes: Y scale lerps toward `Squash`, X grows by `(1 - Squash) * charge`. The frame the charge crosses `Min Charge` (once per charge) is the ready cue: the cow tints toward `Ready Flash Color`, fading over `Ready Flash Time`, and the camera kicks once (`Ready Shake`). While it charges the cow trembles: a random squash jitter each frame (`Charge Rumble` at full charge, growing with the charge), x and y opposite so the size holds.
    Aim lock: each frame the nearest live snake (not null, active, revealed and not dying; `Snake.CanBeLocked`) or, if `Lock Trees` is on, fruit tree (active `FruitTree`) within `Aim Range` of the cow and within `Aim Angle` of `lastDir` gets a crosshair (`Crosshair Prefab` instance, created in `Start`, hidden when there is no target). It is `Crosshair Color` below `Min Charge` and `Crosshair Ready Color` at `Crosshair Ready Scale` size above it, and spins at `Crosshair Spin`. At or above `Min Charge` it also swaps to `Crosshair Ready Sprite` (back to the prefab's sprite below it). Empty = keep the prefab sprite. Snakes and fruit trees are cached in `Start` (`FindObjectsByType`), so ones spawned later are not locked.
 3. Released: scale and tint restored, crosshair hidden. If a snake or fruit tree is locked, `lastDir` is set to the direction to it (so the dash, `AlongScale` and the tree check all agree). `aimOnly` goes off and `PlayerControl` is disabled for the dash. Dash lasts `Dash Time` seconds at `lastDir.normalized * Dash Speed * charge`. The charge is remembered as the dash charge.
 4. Dash hits anything (`OnCollisionEnter2D`): if the dash charge is at least `Min Charge` and the thing has a `FruitTree`, the cow calls its `Hit()`. Any new hit ends the dash. A trunk the cow was already touching when it started charging also counts (`OnCollisionStay2D`), but only if the cow is dashing toward it, so backing off a tree drops nothing.
@@ -51,7 +51,7 @@ The cow calls the tree, not the other way round, so there is no collision-callba
 
 `CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it. `IsGrounded` (public) is true when energy is 0 or the Rigidbody2D is standing still, so standing still counts as landed and a tired hopping crow still counts as down. `Snake` reads it, see `snakes.md`.
 
-Drowning: when the crow is landed (standing still, or at zero energy) over a collider with a `Water` component (`Water.cs`, an empty marker) for more than `Land Grace` seconds, it drowns: input stops, its sprites and bar hide, and after `Drown Delay` seconds the level restarts (same as a snake bite until a lose screen exists). The grace stops a quick change of direction mid-flight from counting as landing. In Level2 `River` and `Pond` have `Water`; the pond's collider has a hole over the island, so a crow can land there safely.
+Drowning: when the crow is landed (standing still, or at zero energy) over a collider with a `Water` component (`Water.cs`, an empty marker) for more than `Land Grace` seconds, it drowns: input stops, its sprites and bar hide, the camera shakes (`Drown Shake`), and after `Drown Delay` seconds the lose screen shows "Crow cant swim!" (see `menu.md`, Lose screen). The grace stops a quick change of direction mid-flight from counting as landing. In Level2 `River` and `Pond` have `Water`; the pond's collider has a hole over the island, so a crow can land there safely.
 
 ## Tuning
 
@@ -79,7 +79,8 @@ On the `PlayerControl` component of each object.
 | Ram key | Cow | CowRam > Ram Key | not set up yet (default Space) |
 | Ram juice | Cow | CowRam > Cam | Main Camera |
 | Ram juice | Cow | CowRam > Dash Stretch / Hit Squash / Hop Time / Hop Speed / Hit Shake / Weak Shake | 1.2 / 0.7 / 0.15 / 5 / 0.3 / 0.04 |
-| Ready cue | Cow | CowRam > Ready Flash Color / Ready Flash Time | (1, 0.95, 0.85) / 0.12 |
+| Ready cue | Cow | CowRam > Ready Flash Color / Ready Flash Time / Ready Shake | (1, 0.95, 0.85) / 0.12 / 0.06 |
+| Charge trembles (0 = none) | Cow | CowRam > Charge Rumble | 0.06 (at full charge) |
 | Snake kill shake | Cow | CowRam > Snake Shake | 0.35 |
 | Aim lock | Cow | CowRam > Crosshair Prefab / Aim Range / Aim Angle / Lock Trees | PF_AimCrosshair / 4 / 35 / on |
 | Crosshair look | Cow | CowRam > Crosshair Color / Crosshair Ready Color / Crosshair Ready Scale / Crosshair Spin | gold E8B23A at 60% / (1, 0.95, 0.75) / 1.3 / 90 |
@@ -89,7 +90,7 @@ On the `PlayerControl` component of each object.
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
 | Energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 (tired scale 0.07) |
 | Energy (Level2) | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 |
-| Drowning | Crow | CrowEnergy > Drown Delay / Land Grace | 1.5 / 0.3 |
+| Drowning | Crow | CrowEnergy > Drown Delay / Land Grace / Drown Shake | 0.6 / 0.3 / 0.4 |
 | Crow size | Crow | Transform > Scale | 0.5 |
 | Cow collider (feet only) | Cow | BoxCollider2D > Size / Offset | 1.6 x 0.8 / (0, -0.8) |
 | Body type, gravity | Cow, Crow | Rigidbody2D > Body Type / Gravity Scale | Dynamic / 0 |
@@ -118,4 +119,4 @@ On the `PlayerControl` component of each object.
 - The crow still clears fog while tired.
 - Fruit tree hanging fruit never regrows: after the last one is rammed down the tree drops nothing (see `trees.md`).
 - Juice beyond the charge squash.
-- Restart, win and lose: no link between player state and level flow.
+- Win: no link between player state and level flow (lose is handled by `LoseScreen`).

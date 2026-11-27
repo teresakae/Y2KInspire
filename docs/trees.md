@@ -79,7 +79,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 ## Sway
 
-All trees (wall trees and the fruit tree) sway in the same wind as the grass (`Fog Grid > Wind`, global `_FogWind`), much less than the grass. Shader `Assets/Shaders/TreeSway.shader` (`Cowncrow/TreeSway`): lit like the default sprite, draws the sprite's own colours, bends the vertices.
+All trees (wall trees and the fruit tree) sway in the same wind as the grass (`Fog Grid > Wind`, global `_FogWind`), much less than the grass. Shader `Assets/Shaders/TreeSway.shader` (`Cowncrow/TreeSway`): lit like the default sprite, draws the sprite's own colours, bends the vertices. The Settings Motion slider scales the sway too (global `_ReduceMotion`, see menu.md).
 
 - `M_TreeTrunk`: tiny sway, planted at the bottom (`Base sway` 0).
 - `M_TreeCanopy`: more sway, `Base sway` 0.4, so the canopy's bottom already moves as far as the trunk's top (`Sway amount` 0.06 x 0.4 = 0.024 = trunk's 0.024 x 1). Keep that equation if you retune: canopy `Sway amount` x `Base sway` = trunk `Sway amount`, and `Wind lean` in the same ratio, or the two separate at the join.

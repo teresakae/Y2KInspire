@@ -56,6 +56,8 @@ public class SharedCamera : MonoBehaviour
     /// <summary>Short decaying random jolt, strength in units. A new shake never replaces a bigger one still running.</summary>
     public void Shake(float strength)
     {
+        strength *= PlayerPrefs.GetFloat("Shake", 1f);   // Screen shake setting (SettingsPanel): 0 = off
+        if (strength <= 0f) return;
         if (shakeTimer > 0f && strength < shakeStrength * Mathf.Clamp01(shakeTimer / shakeTime)) return;
         shakeStrength = strength;
         shakeTimer = shakeTime;

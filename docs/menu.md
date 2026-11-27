@@ -4,7 +4,7 @@ Status: script, scene and title art built. Build index 0. Motion strength not tu
 
 ## What it is
 
-The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start always begins a fresh game: it clears the saved level and the tutorial tips already seen, then plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, a volume slider and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Clicking a button squashes it for 0.2 s, then the action runs.
+The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start always begins a fresh game: it clears the saved level and the tutorial tips already seen, then plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, Volume, Screen shake and Motion sliders and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Soft fog puffs drift slowly left and right in the bottom-left corner behind the buttons (`TitleArt > BottomMist`). Clicking a button squashes it for 0.2 s, then the action runs.
 
 ## Where it lives
 
@@ -18,7 +18,7 @@ The first screen: a painted title picture with a column of buttons on the left. 
 
 ## How it works
 
-1. `MainMenu.Start`: checks the `Settings Panel` reference (LogError if missing) and applies the saved volume to `AudioListener.volume` (the panel starts inactive, so its own script has not run yet).
+1. `MainMenu.Start`: checks the `Settings Panel` reference (LogError if missing) and calls `SettingsPanel.ApplySaved()` to apply the saved volume and motion (the panel starts inactive, so its own script has not run yet).
    `SettingsPanel.OnEnable` (each time the panel opens): checks its references, sets the toggle from `Screen.fullScreen` and the slider from the saved volume. The UI is set with `...WithoutNotify`, so this does not trigger the change events.
 2. Each button's `OnClick` calls `ButtonPop.Pop()`; the real method (`StartGame` etc.) sits in that button's `ButtonPop > After Pop` list, so it runs after the squash. The panel's Toggle and Slider use their `On Value Changed` lists, in the Dynamic section (`SettingsPanel.SetFullscreen`, `SettingsPanel.SetVolume`), so the value is passed through.
 3. Volume sets `AudioListener.volume` (master volume for every AudioSource) and saves.
@@ -29,6 +29,8 @@ PlayerPrefs keys:
 |---|---|---|---|
 | `SavedLevel` | string | `LevelExit`, `PauseMenu.SaveAndQuit` | Scene name of the level reached. Start deletes it and always loads `First Level` (`Intro`), so nothing reads it at the moment (kept for a later Continue button). |
 | `Volume` | float 0-1 | `SettingsPanel.SetVolume` | Master volume. Default 1. |
+| `Shake` | float 0-1 | `SettingsPanel.SetShake` | Screen shake multiplier. Default 1. |
+| `Motion` | float 0-1 | `SettingsPanel.SetMotion` | Motion strength (`_ReduceMotion` = 1 minus this). Default 1. |
 
 Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist otherwise. To reset the save while testing: `Edit > Clear All PlayerPrefs`.
 
@@ -37,10 +39,10 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 `Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `MainMenu > First Level` is `Intro`, so Start goes here when there is no save; with a save, Start skips it and loads the saved level.
 
 - Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
-- `Start` begins loading `Intro > Next Scene` (default `Level1`) in the background with activation held, so the level is ready behind the video. When the video ends, any key is pressed, or the `SkipButton` is clicked, `Leave()` starts a fade to white (`Canvas > Fade`, `Fade Time` 0.5 s, step capped at 0.05 s per frame); at full white the loaded scene switches on. Input is ignored once leaving. If the video fails to load it logs an error and leaves the same way. No `Fade` Image = logs an error and switches at once.
+- `Start` begins loading `Intro > Next Scene` (default `Level1`) in the background with activation held, so the level is ready behind the video. When the video ends or the `SkipButton` is clicked, `Leave()` starts a fade to white (`Canvas > Fade`, `Fade Time` 0.5 s, step capped at 0.05 s per frame); at full white the loaded scene switches on. Input is ignored once leaving. If the video fails to load it logs an error and leaves the same way. No `Fade` Image = logs an error and switches at once.
 - The camera background is white, so letterbox bars match the video's white frames.
 - `Canvas > Fade`: full-screen white Image, alpha 0, Raycast Target off, last sibling so it covers `SkipButton`; wired to `Main Camera > Intro > Fade`.
-- Skip button: `Canvas > SkipButton` (Overlay canvas 1920x1080 match 0.5, with an EventSystem), anchored bottom right, 40 px margin, 260 x 90, styled like the menu buttons (light slice, dark on hover and press, label "skip" in `Kkscribble SDF` 48, plum). `Button > OnClick` = `ButtonPop.Pop`; `ButtonPop > After Pop` = `Main Camera > Intro.Leave` (public). A mouse click elsewhere does nothing.
+- Skip button: `Canvas > SkipButton` (Overlay canvas 1920x1080 match 0.5, with an EventSystem), anchored bottom right, 40 px margin, 260 x 90, styled like the menu buttons (light slice, dark on hover and press, label "skip" in `Kkscribble SDF` 48, plum). `Button > OnClick` = `ButtonPop.Pop`; `ButtonPop > After Pop` = `Main Camera > Intro.Leave` (public). Key presses and clicks elsewhere do nothing.
 
 | What | Field | Value |
 |---|---|---|
@@ -81,13 +83,20 @@ To check later phases without waiting, the timer is the private `elapsed` field 
 
 ## Settings panel (shared)
 
-Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its root. One copy in `MainMenu > Canvas` (Pos X 280) and one in `PF_HUD > PauseScreen`. Contents: controls card, fullscreen toggle, volume slider, Back button. Fields: `Fullscreen Toggle`, `Volume Slider` (Min 0, Max 1).
+Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its root. One copy in `MainMenu > Canvas` (Pos X 280) and one in `PF_HUD > PauseScreen`. Contents: controls card, fullscreen toggle, Volume, Screen shake and Motion rows (each a label and a slider, Min 0 Max 1, default 1), Back button (the pause copy also has Quit). Layout spacing 24 so the pause copy fits the 900 tall panel. Fields: `Fullscreen Toggle`, `Volume Slider`, `Shake Slider`, `Motion Slider`. Each slider's On Value Changed calls `SetVolume`, `SetShake` or `SetMotion`. All are saved in PlayerPrefs (`Volume`, `Shake`, `Motion`).
 
 | Method | Wire it to |
 |---|---|
 | `SetFullscreen(bool)` | Toggle On Value Changed, Dynamic bool |
 | `SetVolume(float)` | Slider On Value Changed, Dynamic float |
+| `SetShake(float)` | Shake Slider On Value Changed, Dynamic float |
+| `SetMotion(float)` | Motion Slider On Value Changed, Dynamic float |
 | `Close()` | Back button, `ButtonPop > After Pop` (hides the panel; in the pause screen this also resumes, see Pause) |
+
+- Volume: `AudioListener.volume`, master volume for every sound.
+- Screen shake: `SharedCamera.Shake` multiplies every shake by it; 0 turns shakes off.
+- Motion: sets the global shader value `_ReduceMotion` (1 minus the slider). `TitleFloat`, `GrassSway` and `TreeSway` shaders and `MistDrift` scale their movement by 1 - `_ReduceMotion`, so 0 = still, 1 = full. The global is 0 until set, so full motion by default.
+- `SettingsPanel.ApplySaved()` (static) applies saved volume and motion; `MainMenu.Start` calls it because the panel starts inactive.
 
 ## Pause
 
@@ -98,6 +107,52 @@ A browser refresh goes to the menu, and Start begins a fresh game.
 - `PlayerControl`, `CowRam` and `SharedCamera` return early while `Time.timeScale` is 0. `ButtonPop` uses unscaled time, so button squashes still play.
 - `Scribble.shader` uses `_Time`, so the key drawings freeze while paused.
 - `PauseMenu.OnDestroy` sets `timeScale` back to 1, because it survives scene loads.
+
+## Lose screen
+
+The game-over screen. When a snake eats the crow or the crow drowns, the screen fades to white, then a panel shows a header, a hint, and two buttons: Play Again and Main Menu. The game freezes behind the panel. The header and hint differ for the two causes.
+
+### Where it lives
+
+- Script: `Assets/Scripts/LoseScreen.cs`, on `PF_HUD > LoseScreen` (active, full-screen). `PF_HUD` is in both levels, so nothing is set per scene.
+- `Pause Menu`: set to the `PauseMenu` on the `PF_HUD` root (the LoseScreen's parent). Switched off when the lose screen starts.
+- `Whiteout`: inactive at start. Full-screen white Image, Raycast Target on, so nothing behind it can be clicked.
+- `Panel`: inactive at start. Image `cow and crow ui_10` (Draw Mode Sliced, 1100 x 560, centred). Vertical Layout Group, padding 60, spacing 24. Holds:
+  - `Header`: TMP, `Kkscribble SDF`, size 96.
+  - `Subtitle`: TMP, size 54.
+  - `Buttons`: Horizontal Layout Group, spacing 40. Holds `PlayAgainButton` and `MenuButton`, copies of the settings panel's button (`cow and crow ui_4`, ButtonPop, 360 x 90). `OnClick` = `ButtonPop.Pop`; `ButtonPop > After Pop` = `LoseScreen.PlayAgain` / `LoseScreen.MainMenu`.
+- `cow and crow ui_10` has a 60 px 9-slice border on all sides (Sprite Editor), so the panel stretches without warping. Images that use it as Simple are unaffected.
+
+### How it works
+
+1. `Snake` calls `ShowEaten()` after `Eaten Delay`. `CrowEnergy` calls `ShowDrowned()` after `Drown Delay`. Both find the LoseScreen in `Awake` with `FindAnyObjectByType`. A scene with none (test scenes) reloads directly, as before.
+2. `Show` sets the header and hint text, then fades `Whiteout` from 0 to `White Alpha` over `Fade Time`. It uses unscaled time. The game keeps running during the fade. It also switches off `Pause Menu`, so Esc or P can't open pause over the lose screen or unfreeze the game behind it.
+3. At full white, `Panel` turns on, `Time.timeScale` goes to 0 (snakes and the cow stop behind the panel), and Play Again is selected. Enter or Space presses it.
+4. Repeat calls are ignored.
+5. Play Again sets `Time.timeScale` to 1 and reloads the active scene.
+6. Main Menu sets `Time.timeScale` to 1, writes the active scene name to PlayerPrefs `SavedLevel` (like Save and quit), and loads `Menu Scene`. Start in the menu clears `SavedLevel` again (`MainMenu.cs`), so for now this does not resume the level. See What it is, above.
+
+### Tuning
+
+All on `PF_HUD > LoseScreen` (script `LoseScreen`) unless noted.
+
+| What | Where | Default |
+|---|---|---|
+| Fade to white (s) | Fade Time | 0.8 |
+| Whiteout opacity once faded (1 = solid white) | White Alpha | 1 |
+| Header when eaten | Eaten Header | "Crow's been eaten!" |
+| Hint when eaten | Eaten Subtitle | "Fly around the snakes. Let Cow RAM to protect!" |
+| Header when drowned | Drown Header | "Crow cant swim!" |
+| Hint when drowned | Drown Subtitle | "Don't land in the water." |
+| Scene loaded by Main Menu | Menu Scene | `MainMenu` |
+| Panel size | `Panel > Rect Transform` | 1100 x 560 |
+
+The delays before the screen are on `Snake > Eaten Delay` and `CrowEnergy > Drown Delay` (see `snakes.md` and `players.md`).
+
+### Gotchas
+
+- Not checked in Play mode: the fade (the editor did not tick while unfocused). The panel layout was checked in a screenshot only.
+- `Menu Scene` must be in `File > Build Profiles`, like every scene the game loads.
 
 ## MainMenu public methods
 
@@ -114,6 +169,7 @@ Global Light 2D
 Global Volume (Volume, global, VP_Title)
 TitleArt (all SpriteRenderers in world space, one material each)
   Sky, FogBack, Earth, Fog, CowShadow, Cow, CrowShadow, Crow, Title   (back to front, Order in Layer 0-8)
+  BottomMist > MistLayer1, MistLayer2 (6 `Puff` each: `Assets/Art/Fog/fog.png` fog_0, Sprite-Unlit-Default, order 4, colour (0.96, 0.96, 1) alpha 0.35 to 0.6, scale 1.6 to 2.8, bottom-left x -21 to -7, y -11.5 to -4.7). `Mist Drift` slides each layer: layer 1 Speed 0.15 Distance 1.5, layer 2 Speed 0.1 Distance -2.
   Motes (Particle System, Order in Layer 4)
 EventSystem (InputSystemUIInputModule)
 Canvas (Overlay, scale 1920x1080 match 0.5, MainMenu script)

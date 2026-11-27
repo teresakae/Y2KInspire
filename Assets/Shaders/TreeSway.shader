@@ -65,6 +65,9 @@ Shader "Cowncrow/TreeSway"
                 float _WindLean;
             CBUFFER_END
 
+            // Global, set by SettingsPanel from the Motion setting. 0 (unset) = full motion, 1 = none.
+            float _ReduceMotion;
+
             // Set every frame by FogGrid. xy = wind direction * strength. Zero = no lean, sway only.
             float4 _FogWind;
 
@@ -90,7 +93,7 @@ Shader "Cowncrow/TreeSway"
                 float h = saturate((input.positionOS.y - _BottomY) / _SwayHeight);
                 float weight = _BaseSway + (1.0 - _BaseSway) * h * h;
 
-                float push = (strength * _WindLean + _SwayAmount * (wave + _Flutter * flutter)) * weight;
+                float push = (strength * _WindLean + _SwayAmount * (wave + _Flutter * flutter)) * weight * (1.0 - _ReduceMotion);
                 float3 world = TransformObjectToWorld(input.positionOS);
                 world.xy += dir * push;
 

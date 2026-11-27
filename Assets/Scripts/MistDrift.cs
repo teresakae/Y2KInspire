@@ -18,6 +18,8 @@ public class MistDrift : MonoBehaviour
     private void Update()
     {
         // ponytail: plain sine, no easing or randomness
-        transform.position = start + Vector3.right * Mathf.Sin(Time.time * speed) * distance;
+        // Motion setting (SettingsPanel) shrinks the drift; the global is 0 until set, so full drift by default
+        float motion = 1f - Shader.GetGlobalFloat("_ReduceMotion");
+        transform.position = start + Vector3.right * Mathf.Sin(Time.time * speed) * distance * motion;
     }
 }

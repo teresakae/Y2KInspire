@@ -2,11 +2,12 @@
 
 ## What it is
 
-A snake sleeps coiled under the fog. It doesn't move until the crow first clears the fog over it. From then on it is awake for good: it stays coiled for a beat, then stretches out and wanders around its spot (back under fog too, hidden but still moving), mirroring its sprite left and right as it slithers, and coils up again whenever it rests. If the crow is on the ground within range, the snake coils as a warning. If the crow stays there for `Warn Time`, the snake eats it: the crow vanishes, a red "!" pops up on the snake, and the scene restarts after `Eaten Delay`. If the crow takes off or leaves range first, the snake calms down and carries on. If `Chase Range` is above 0 and the crow (grounded or flying) is within it, the snake slithers straight at the crow at `Chase Speed` instead of wandering; the warn and bite rules above still apply when it gets close. The cow kills a snake by ramming it with a charged dash: the snake switches to the `Dead` sprite (X eye), stops moving and fades out over `Dead Fade Time`, then is removed. While charging, the cow soft-locks onto the nearest live snake in front of it and dashes at it (see `players.md`, Cow ram); `Snake.CanBeLocked` (public) lets it skip snakes not yet revealed and ones already fading.
+A snake sleeps coiled under the fog. It doesn't move until the crow first clears the fog over it. From then on it is awake for good: it stays coiled for a beat, then stretches out and wanders around its spot (back under fog too, hidden but still moving), mirroring its sprite left and right as it slithers, and coils up again whenever it rests. If the crow is on the ground within range, the snake coils as a warning. If the crow stays there for `Warn Time`, the snake eats it: the crow vanishes, a "!" speech bubble pops up over the snake, the camera shakes (`Eaten Shake`), and after `Eaten Delay` the lose screen shows (see `menu.md`, Lose screen). If the crow takes off or leaves range first, the snake calms down and carries on. If `Chase Range` is above 0 and the crow (grounded or flying) is within it, the snake slithers straight at the crow at `Chase Speed` instead of wandering; the warn and bite rules above still apply when it gets close. The cow kills a snake by ramming it with a charged dash: the snake switches to the `Dead` sprite (X eye), stops moving and fades out over `Dead Fade Time`, then is removed. While charging, the cow soft-locks onto the nearest live snake in front of it and dashes at it (see `players.md`, Cow ram); `Snake.CanBeLocked` (public) lets it skip snakes not yet revealed and ones already fading.
 
 ## Where it lives
 
 - Script: `Assets/Scripts/Snake.cs`, on each snake object.
+- Eaten bubble: `Assets/Prefabs/PF_EatenBubble.prefab` (see Adding a snake, step 6).
 - Reads `CrowEnergy.IsGrounded` and `CowRam.IsStrongDash` (see `players.md`) and `FogGrid.IsClear` (see `fog.md`).
 - Art: `Assets/Art/Snake/snake_coiled.png`, `snake_stretched.png` (130 pixels per unit); dead sprite `SPR_SnakeDead` (sub-sprite of `Assets/Art/Snake/cow and crow (2).png`, set to 130 pixels per unit so sizes match; the rest of that sheet is unused).
 - Scene: `Snake` in SampleScene. In `Assets/Scenes/Level1.unity` the `Snake` object is inactive: snakes start in Level2, so Level1 has none.
@@ -15,7 +16,7 @@ A snake sleeps coiled under the fog. It doesn't move until the crow first clears
 
 `Update`, in this order:
 
-1. If the crow was eaten: count `Eaten Delay` down, then reload the active scene (direct reload until a lose screen exists). Nothing else runs.
+1. If the crow was eaten: count `Eaten Delay` down, then call `LoseScreen.ShowEaten()` (or reload the scene if it has no LoseScreen). Nothing else runs.
 2. Revealed check, until it first passes: `FogGrid.IsClear` at the snake's centre (fog below `Reveal Threshold` on the Fog Grid). Outside the fog area counts as clear. Once true it stays true. If `Fog` is empty the snake is awake from the start.
 3. Warn check. Only if revealed, the crow is grounded and within `Warn Range`. On entering the warning the warn timer starts at `Warn Time`. At 0 the crow is eaten: the Crow object is switched off, `Eaten Mark` is switched on, and the delay in step 1 starts. The warning ends when the crow takes off or gets more than `Warn Range` + `Calm Margin` away. The margin stops a tired crow waddling at the edge of `Warn Range` from flipping the snake between coiled and chasing every frame (each restart also reset the bite timer).
 
@@ -39,7 +40,7 @@ Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigge
 3. Add a Rigidbody2D, `Body Type` Kinematic.
 4. Add a Capsule Collider 2D with `Is Trigger` on, sized to the body.
 5. Add the `Snake` script. Drag `Crow` into `Crow`, `Fog Grid` into `Fog`, and the two sprites into `Coiled` and `Stretched`. Optional: `SPR_SnakeDead` into `Dead`; `Chase Range` above 0 to make it hunt the crow.
-6. Eaten mark: right-click Snake > `3D Object > Text - TextMeshPro`, name it `EatenMark`, text `!`, red, Font Size about 8, placed just above the snake. In `Extra Settings > Order in Layer` set 20 so it draws above the fog. Untick it (inactive). Drag it into `Snake > Eaten Mark`.
+6. Eaten mark: drag `Assets/Prefabs/PF_EatenBubble` onto the snake in the Hierarchy so it becomes a child. Untick it (inactive), then drag it into `Snake > Eaten Mark`. It sits 0.1 above the snake's sprite top. Its local scale is 1 divided by the snake's scale (2 at 0.5), to cancel the snake's scale. It draws above the fog (orders 20 to 22). `PF_EatenBubble` has three parts: `Body` (the moo bubble, squashed to a circle), `Tail` (points down at the snake), and `Text` (a plum "!" in `Kkscribble SDF`).
 7. Set `Obstacles` to Default + Water (not Fog, not Crow). Size: set `Transform > Scale` (around 0.5 with the current art). The collider and the "!" scale with it; ranges don't.
 8. Select the snake to see roam radius, warn range and chase range as wire circles.
 
@@ -48,7 +49,8 @@ Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigge
 | What | Object | Field | Current value |
 |---|---|---|---|
 | Size | Snake | Transform > Scale | 1 (feels too big; try 0.5) |
-| "!" time before restart (s) | Snake | Snake > Eaten Delay | 1.5 (default) |
+| "!" bubble time before the lose screen (s) | Snake | Snake > Eaten Delay | 1 (default) |
+| Camera shake when eaten (units, 0 = none) | Snake | Snake > Eaten Shake | 0.5 (default) |
 | Roam distance | Snake | Snake > Roam Radius | 3 (default) |
 | Speed (units/s) | Snake | Snake > Move Speed | 1 (default) |
 | Rest between points (s) | Snake | Snake > Pause Time | 1.5 (default) |
@@ -75,15 +77,15 @@ Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigge
 - Hidden on screen = sorting order: the snake's `Order in Layer` must stay below the fog's (Level2: snakes 14, fog 19; the cow is 15, the crow 16, canopies 17). A snake at 14 draws over the ground and tufts but under the animals. Asleep = never yet revealed (`FogGrid.IsClear` at its centre). A snake partly out of the fog can be asleep but partly visible.
 - Once awake it roams, warns and bites under fog too. In practice the crow clears fog around itself, so a bite usually happens in the open.
 - `Stretched` empty: the snake keeps the coiled sprite while moving (logs an error at start). Before this guard, an empty field blanked the sprite and the snake looked like it teleported.
-- The reload needs the scene in the build list. `SampleScene` is.
+- The fallback reload (no LoseScreen) needs the scene in the build list. `SampleScene` is.
 - Leave `Obstacles` without Fog: the fog colliders (pool) are on the Fog layer and would stop snakes under fog. Leave Crow off too, so the crow's collider doesn't block them.
 - The crow counts as grounded when it stands still or is out of energy (`CrowEnergy.IsGrounded`). A tired crow hopping slowly is still grounded.
 - A kill needs a dash charged to at least `CowRam > Min Charge`. A weak dash passes through.
 - The snake ignores the cow otherwise and only targets the crow.
 - The crow clears fog within 1 unit but the snake warns from 1.5, so a warning snake can sit at the fog edge.
+- The eaten bubble's `Body` is the UI sheet's oval squashed to a circle, so its outline is thinner on the sides. The UI sheet has no round bubble. Ask the artist for one and swap it into `Body`.
 
 ## Not built yet
 
-- Warning sound, vfx, screen shake.
-- Lose screen. The bite reloads the scene directly.
+- Warning sound, vfx.
 - Balance pass on Level2's 16 snakes (see `level.md`).

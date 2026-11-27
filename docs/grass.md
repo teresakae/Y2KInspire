@@ -47,6 +47,8 @@ The vertex shader bends the tuft:
 
 Material changes apply live, also in Play, and to every tuft.
 
+The Settings Motion slider scales the sway (global `_ReduceMotion`, see menu.md); 0 holds the grass still.
+
 `TreeSway.shader` (see `trees.md`, "Sway") reads the same global `_FogWind`, with much smaller amplitudes.
 
 The same `Wind` also moves the fog (`M_FogSwirl` drift = its own drift plus the wind). `M_FogSwirl`'s own drift values were lowered by the default wind, so fog looks as before; raising the wind speeds up fog too.

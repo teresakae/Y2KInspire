@@ -53,6 +53,9 @@ Shader "Cowncrow/TitleFloat"
                 float _WobbleSpeed;
             CBUFFER_END
 
+            // Global, set by SettingsPanel from the Motion setting. 0 (unset) = full motion, 1 = none.
+            float _ReduceMotion;
+
             struct Attributes
             {
                 float3 positionOS : POSITION;
@@ -71,10 +74,11 @@ Shader "Cowncrow/TitleFloat"
             {
                 Varyings o;
                 float t = _Time.y + _Phase;
+                float m = 1.0 - _ReduceMotion;
 
                 // scale and tilt in object space, so they pivot on the object's origin
-                float s = 1.0 + _ScaleAmp * sin(t * _ScaleSpeed);
-                float a = radians(_TiltDeg) * sin(t * _TiltSpeed);
+                float s = 1.0 + m * _ScaleAmp * sin(t * _ScaleSpeed);
+                float a = m * radians(_TiltDeg) * sin(t * _TiltSpeed);
                 float sn = sin(a);
                 float cs = cos(a);
                 float2 p = input.positionOS.xy * s;
@@ -82,7 +86,7 @@ Shader "Cowncrow/TitleFloat"
 
                 // bob in world units, whatever the object's scale
                 float3 world = TransformObjectToWorld(float3(p, input.positionOS.z));
-                world.y += _BobAmp * sin(t * _BobSpeed);
+                world.y += m * _BobAmp * sin(t * _BobSpeed);
 
                 o.positionCS = TransformWorldToHClip(world);
                 o.uv = TRANSFORM_TEX(input.uv, _MainTex);
@@ -98,7 +102,7 @@ Shader "Cowncrow/TitleFloat"
                 float2 w;
                 w.x = sin(uv.y * _WobbleScale + t) + 0.5 * sin(uv.y * _WobbleScale * 2.3 - t * 1.7);
                 w.y = sin(uv.x * _WobbleScale * 1.3 - t * 0.8) + 0.5 * sin(uv.x * _WobbleScale * 2.9 + t * 1.3);
-                uv += _WobbleAmp * w;
+                uv += (1.0 - _ReduceMotion) * _WobbleAmp * w;
 
                 half4 c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
                 return c * input.color;
