@@ -134,7 +134,7 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 
 Scene `Assets/Scenes/Level2.unity`, made by copying Level1 (camera, HUD, moo bubble, cow, crow, fog, mist, motes, lights kept). Layout v4 built 23 Nov 2026 by a placement script run through the bridge; tune by hand from here.
 
-What it is: 3 x 3 screens (21.35 x 12 each), map about x -10.7 to 53.4, y 6 to -30. The cow and crow start top-left. A river borders the top and right. From the start a path drifts down-right into the fork clearing, which has a fruit tree in its middle. The short branch runs down the pond's west and south shore to the meeting clearing (5 snakes). The long branch runs along the river past the pond's north shore, through two fruit-tree clearings, and back west to the meeting clearing (4 snakes). The meeting clearing has a fruit tree in its middle. From there the final stretch curves down and runs off the bottom-right edge, where the exit is: 7 chasing snakes and fast fog regrowth. The crow can fly over the pond to a fruit on the island; the cow cannot. A crow that runs out of energy over water drowns (see `players.md`).
+What it is: 3 x 3 screens (21.35 x 12 each), map about x -10.7 to 53.4, y 6 to -30. The cow and crow start top-left. A river borders the top and right. From the start a path drifts down-right into the fork clearing, which has a fruit tree in its middle. The short branch runs down the pond's west and south shore to the meeting clearing (5 snakes). The long branch runs along the river past the pond's north shore, through two fruit-tree clearings, and back west to the meeting clearing (4 snakes). The meeting clearing has a fruit tree in its middle. From there the final stretch curves down and runs off the bottom-right edge, where the exit is: 7 chasing snakes and fast fog regrowth. The crow can fly over the pond to a fruit on the island; the cow cannot. A crow that lands on water (stops, or runs out of energy) drowns (see `players.md`).
 
 Layout (world coordinates):
 
@@ -172,7 +172,7 @@ Snakes (`Snakes`, 16, scale 0.5, `Dead` = `SPR_SnakeDead`, Order in Layer 14 so 
 
 Fog: Fog Grid at (21.35, -12), `Area Size` 65.6 x 38.4, `Pixels Per Unit` 12, `Cell Size` 0.4, `Puff Count` 370: a 788 x 461 texture and 15,744 cells (Level1 at 16/0.25 would be 1050 x 614 px and 40k cells here) and an 11 x 11 collider pool. `FogGrid.Update` measured in the editor at about 2.7 ms idle, 5 ms while clearing; test WebGL. `Fast Regrow Zones` = `FastFogZone` at (33, -27), scale (26, 8, 1), over the final stretch.
 
-Checked through the bridge (23 Nov, v4): a 1.9 x 1.0 box (bigger than the cow) gets from the start to the exit through each branch alone; a 0.8 probe can't reach the exit with both branches cut and can't reach the island. In Play mode the crow eats the island fruit, sits on the island at zero energy without drowning, and drowns at zero energy over open water. No console errors.
+Checked through the bridge (23 Nov, v4): a 1.9 x 1.0 box (bigger than the cow) gets from the start to the exit through each branch alone; a 0.8 probe can't reach the exit with both branches cut and can't reach the island. In Play mode the crow eats the island fruit, sits on the island at zero energy without drowning, and drowns at zero energy over open water. (Since 27 Nov the crow also drowns when it stops over water with energy left; not re-checked in Play yet.) No console errors.
 
 Tuning (Level2 values):
 

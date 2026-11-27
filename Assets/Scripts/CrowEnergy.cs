@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
-/// <summary>Crow energy: drains while moving, refilled by fruit; at zero the crow hops slowly, or drowns if it is over Water.</summary>
+/// <summary>Crow energy: drains while moving, refilled by fruit; at zero the crow hops slowly, and it drowns if it lands on Water.</summary>
 [RequireComponent(typeof(PlayerControl))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class CrowEnergy : MonoBehaviour
@@ -18,14 +18,18 @@ public class CrowEnergy : MonoBehaviour
     [SerializeField] private Image bar;
     [Tooltip("If the bar's Canvas is World Space, it floats this far above the crow.")]
     [SerializeField] private Vector2 barOffset = new Vector2(0f, 1.2f);
-    [Tooltip("Seconds between drowning (out of energy over Water) and the level restarting.")]
+    [Tooltip("Seconds between drowning (landing on Water) and the level restarting.")]
     [SerializeField] private float drownDelay = 1.5f;
+    [Tooltip("Seconds the crow can stand still over Water before it drowns. Stops a quick change of direction from counting as landing.")]
+    [Range(0f, 2f)]
+    [SerializeField] private float landGrace = 0.3f;
 
     PlayerControl player;
     Rigidbody2D rb;
     float energy;
     bool drowned;
     float drownTimer;
+    float wetTime;
 
     void Awake()
     {
@@ -47,7 +51,9 @@ public class CrowEnergy : MonoBehaviour
         energy = Mathf.Clamp(energy, 0f, maxEnergy);
         player.speedScale = energy > 0f ? 1f : tiredSpeedScale;
         if (bar != null) bar.rectTransform.localScale = new Vector3(energy / maxEnergy, 1f, 1f);
-        if (energy <= 0f && OverWater()) Drown();
+        // Landed (standing still, or out of energy) over water: drown after a short grace.
+        wetTime = IsGrounded && OverWater() ? wetTime + Time.deltaTime : 0f;
+        if (wetTime > landGrace) Drown();
     }
 
     bool OverWater()

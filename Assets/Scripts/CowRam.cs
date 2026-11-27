@@ -48,13 +48,15 @@ public class CowRam : MonoBehaviour
     [SerializeField] private float readyFlashTime = 0.12f;
 
     [Header("Aim lock")]
-    [Tooltip("Crosshair shown on the locked snake (a prefab). Empty = no crosshair, but the lock still works.")]
+    [Tooltip("Crosshair shown on the locked snake or fruit tree (a prefab). Empty = no crosshair, but the lock still works.")]
     [SerializeField] private GameObject crosshairPrefab;
     [Tooltip("A snake this close can be locked (units). A full dash covers Dash Speed x Dash Time = 3, plus a margin.")]
     [SerializeField] private float aimRange = 4f;
     [Tooltip("A snake within this many degrees of the aim direction can be locked.")]
     [Range(5f, 90f)]
     [SerializeField] private float aimAngle = 35f;
+    [Tooltip("Also lock onto fruit trees (crosshair shows on them, dash aims at the trunk).")]
+    [SerializeField] private bool lockTrees = true;
     [Tooltip("Crosshair tint while the charge is still below Min Charge.")]
     [SerializeField] private Color crosshairColor = new Color(0.91f, 0.70f, 0.23f, 0.6f);
     [Tooltip("Crosshair tint once the dash would kill.")]
@@ -74,6 +76,7 @@ public class CowRam : MonoBehaviour
     bool charging, dashing, hopping, ready;
     float charge, dashCharge, timer, popTimer;
     Snake[] snakes;
+    FruitTree[] trees;
     GameObject crosshair;
     SpriteRenderer crosshairSr;
     Vector3 crosshairBaseScale;
@@ -92,6 +95,7 @@ public class CowRam : MonoBehaviour
     void Start()
     {
         snakes = FindObjectsByType<Snake>();
+        trees = FindObjectsByType<FruitTree>();
         if (crosshairPrefab == null) return;
         crosshair = Instantiate(crosshairPrefab);
         crosshair.SetActive(false);
@@ -180,7 +184,7 @@ public class CowRam : MonoBehaviour
         }
     }
 
-    // Nearest live snake inside Aim Range and within Aim Angle of the aim direction, or null.
+    // Nearest live snake or fruit tree inside Aim Range and within Aim Angle of the aim direction, or null.
     Transform FindTarget()
     {
         Transform best = null;
@@ -192,6 +196,17 @@ public class CowRam : MonoBehaviour
             if (to.magnitude > bestDist || Vector2.Angle(player.lastDir, to) > aimAngle) continue;
             best = s.transform;
             bestDist = to.magnitude;
+        }
+        if (lockTrees)
+        {
+            foreach (FruitTree t in trees)
+            {
+                if (t == null || !t.gameObject.activeInHierarchy) continue;
+                Vector2 to = t.transform.position - transform.position;
+                if (to.magnitude > bestDist || Vector2.Angle(player.lastDir, to) > aimAngle) continue;
+                best = t.transform;
+                bestDist = to.magnitude;
+            }
         }
         return best;
     }
