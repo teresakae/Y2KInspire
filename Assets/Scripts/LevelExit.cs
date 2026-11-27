@@ -19,6 +19,10 @@ public class LevelExit : MonoBehaviour
     [Tooltip("Scene to load at the exit. Also saved, so Start in the menu resumes there.")]
     [SerializeField] private string nextScene = "";
 
+    [Tooltip("Played when both players reach the exit (UI_areaTransition). Empty = silent.")]
+    [SerializeField] private AudioClip transitionClip;
+
+    private AudioSource audioSource;
     float alpha = 1f;       // starts white, fades in
     bool cowIn;
     bool crowIn;
@@ -27,6 +31,13 @@ public class LevelExit : MonoBehaviour
 
     // Caps one frame's fade step: a slow frame right after a scene loads would otherwise jump the fade.
     const float maxFadeStep = 0.05f;
+
+    void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
+    }
 
     void Start()
     {
@@ -53,6 +64,7 @@ public class LevelExit : MonoBehaviour
     void StartLeaving()
     {
         leaving = true;
+        if (transitionClip != null) audioSource.PlayOneShot(transitionClip);
         PlayerPrefs.SetString("SavedLevel", nextScene);
         PlayerPrefs.Save();   // WebGL only persists after Save
         // Load behind the fade; the switch waits until the screen is fully white.

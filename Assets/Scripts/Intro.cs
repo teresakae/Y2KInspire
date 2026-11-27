@@ -1,10 +1,9 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-/// <summary>Plays the opening video while the first level loads behind it, then fades to white and switches. Any key, or the Skip button, skips it.</summary>
+/// <summary>Plays the opening video while the first level loads behind it, then fades to white and switches. Only the Skip button skips it.</summary>
 [RequireComponent(typeof(VideoPlayer))]
 public class Intro : MonoBehaviour
 {
@@ -56,10 +55,7 @@ public class Intro : MonoBehaviour
                 enabled = false;   // don't ask twice
                 if (load != null) load.allowSceneActivation = true;
             }
-            return;
         }
-        bool key = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
-        if (key) Leave();
     }
 
     void SetAlpha()

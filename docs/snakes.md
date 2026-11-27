@@ -33,6 +33,8 @@ Every kill by a strong dash (also with `Dead` empty) spawns `Bonk` (`Assets/Pref
 
 Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigger collider with `TreeLook` or `FruitTree` (trunks), or a `Water` collider, is within `Body Radius` of p (`Physics2D.OverlapCircle` with `Obstacles` as the layer mask), or when p is under a canopy (`TreeLook.CanopyCovers` / `FruitTree.CanopyCovers` with `Body Radius` as margin, so a snake never hides under leaves). `Start` caches every `TreeLook` and `FruitTree` (not `Awake`: `TreeLook` places canopies in its Awake) and warns "starts inside a tree, its leaves or water" if the home is blocked. A step into a blocked spot tries x only, then y only, so it slides along trunks like the cow; if both are blocked (or the slide is shorter than const `minSlide` 0.4 of a full step, so it doesn't wriggle on the spot) a roaming snake coils and rests for `Pause Time`, then picks a new target, and a chasing snake coils that step. A snake that is already inside something moves freely so it can get out. A new roam target is the first of 10 random points near home that is not blocked, else home.
 
+Hiss: `Snake > Hiss Clips` (array: `SFX_SnakeHiss1..3`, cuts of `Snake_hiss`; one random take each time) plays once when the fog first clears over the snake, then every random `Hiss Min Gap` to `Hiss Max Gap` seconds while it roams, at `Roam Volume`. When it eats the crow (`EatCrow`) it plays one random take of `Attack Clips` (`SFX_SnakeAttack1..3`, the sharp strikes from `Snake_attack`; empty = falls back to `Hiss Clips`) at volume 1 with pitch `Attack Pitch`. The AudioSource is found in `Awake` (added with Play On Awake off if missing); empty array = silent. Why the old attack and hit sounds were silent: `SFX_SnakeAttack` and `SFX_SnakeHit` were cut from a silent part of the sheet (digital zero), so nothing was playing at all. When the cow rams a snake, `CowRam > Snake Hit Clip` plays (see `players.md`).
+
 ## Adding a snake
 
 1. Create an empty object `Snake`.
@@ -63,6 +65,11 @@ Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigge
 | Chase speed (units/s) | Snake | Snake > Chase Speed | 2 (default) |
 | What blocks it | Snake | Snake > Obstacles | Default + Water in Level2 (script default: everything) |
 | Body size for bumping (units) | Snake | Snake > Body Radius | 0.35 (default) |
+| Hiss sounds | Snake | Snake > Hiss Clips | `SFX_SnakeHiss1..3` |
+| Eat-crow hiss | Snake | Snake > Attack Clips | `SFX_SnakeAttack1..3` |
+| Seconds between roam hisses | Snake | Snake > Hiss Min Gap / Hiss Max Gap | 6 / 12 |
+| Roam hiss volume | Snake | Snake > Roam Volume | 0.4 |
+| Attack hiss pitch (below 1 = deeper) | Snake | Snake > Attack Pitch | 0.9 |
 | Dead sprite (empty = vanish at once) | Snake | Snake > Dead | SPR_SnakeDead (to set) |
 | Dead fade (s) | Snake | Snake > Dead Fade Time | 1 (default) |
 | "bonk!" prefab (empty = none) | Snake | Snake > Bonk | PF_BonkPop |
@@ -87,5 +94,5 @@ Obstacles: snakes obey what the cow does. `Blocked(p)` is true when a non-trigge
 
 ## Not built yet
 
-- Warning sound, vfx.
+- Warning vfx.
 - Balance pass on Level2's 16 snakes (see `level.md`).

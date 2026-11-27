@@ -51,6 +51,10 @@ The cow calls the tree, not the other way round, so there is no collision-callba
 
 `CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it. `IsGrounded` (public) is true when energy is 0 or the Rigidbody2D is standing still, so standing still counts as landed and a tired hopping crow still counts as down. `Snake` reads it, see `snakes.md`.
 
+Move loop: `PlayerControl` adds its own looping AudioSource in `Start` (separate from the one-shot source, so stopping the loop never cuts a one-shot). It plays while moving and not tired, with a random pitch (`Pitch Min` to `Pitch Max`) and a random start point each time it starts, and stops when still, tired, paused, aiming (cow charge) or when the script is disabled (drowning). `Move Loop` empty = silent. Cow uses `Cow_walk` at volume 0.4, crow `Crow_fly2` (short wing-flap loop) at 0.35.
+
+Sounds: `CrowEnergy > Eat Clip` plays in `Eat()`; `CrowEnergy > Drown Clip` plays at the start of `Drown()` (`SFX_CrowEat` = `Crow_eat` raised +20.5 dB to a -1.1 dB peak; `SFX_CrowDrown` = `Crow_drown` 0.46 to 1.2 s, the leading silence cut, 0.1 s fade-out; assigned in both levels). Both go through an AudioSource found in `Awake` (added with Play On Awake off if missing); empty = silent.
+
 Drowning: when the crow is landed (standing still, or at zero energy) over a collider with a `Water` component (`Water.cs`, an empty marker) for more than `Land Grace` seconds, it drowns: input stops, its sprites and bar hide, the camera shakes (`Drown Shake`), and after `Drown Delay` seconds the lose screen shows "Crow cant swim!" (see `menu.md`, Lose screen). The grace stops a quick change of direction mid-flight from counting as landing. In Level2 `River` and `Pond` have `Water`; the pond's collider has a hole over the island, so a crow can land there safely.
 
 ## Tuning
@@ -91,6 +95,9 @@ On the `PlayerControl` component of each object.
 | Energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 (tired scale 0.07) |
 | Energy (Level2) | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 |
 | Drowning | Crow | CrowEnergy > Drown Delay / Land Grace / Drown Shake | 0.6 / 0.3 / 0.4 |
+| Crow sounds | Crow | CrowEnergy > Eat Clip / Drown Clip | `SFX_CrowEat` / `SFX_CrowDrown` |
+| Move loop | Cow, Crow | PlayerControl > Move Loop / Move Volume / Pitch Min / Pitch Max | Cow `Cow_walk` 0.4, Crow `Crow_fly2` 0.35; pitch 0.9 to 1.1 |
+| Cow snake hit sound | Cow | CowRam > Snake Hit Clip | `SFX_TreeHit` (played in `HitSnake()`; the old `SFX_SnakeHit` was silent) |
 | Crow size | Crow | Transform > Scale | 0.5 |
 | Cow collider (feet only) | Cow | BoxCollider2D > Size / Offset | 1.6 x 0.8 / (0, -0.8) |
 | Body type, gravity | Cow, Crow | Rigidbody2D > Body Type / Gravity Scale | Dynamic / 0 |

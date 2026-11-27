@@ -6,7 +6,7 @@ using UnityEngine.Events;
 /// fires, so the real action (load a scene, open a panel) happens after the animation, not before.
 /// Uses unscaled time so it still plays if Time.timeScale is 0.
 /// </summary>
-public class ButtonPop : MonoBehaviour
+public class ButtonPop : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler
 {
     [Tooltip("Scale over the pop. Time 0 to 1 = start to end; value = scale of the button.")]
     [SerializeField] private AnimationCurve curve = new AnimationCurve(
@@ -17,13 +17,23 @@ public class ButtonPop : MonoBehaviour
     [Tooltip("Runs when the pop finishes. Put the button's real action here.")]
     [SerializeField] private UnityEvent afterPop;
 
+    [Tooltip("Played when the button is clicked (UI_buttonClick). Empty = silent.")]
+    [SerializeField] private AudioClip clickClip;
+
+    [Tooltip("Played when the pointer enters the button (UI_hover). Empty = silent.")]
+    [SerializeField] private AudioClip hoverClip;
+
     private RectTransform rect;
+    private AudioSource audioSource;
     private bool popping;
     private float timer;
 
     void Awake()
     {
         rect = GetComponent<RectTransform>();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
     }
 
     public void Pop()
@@ -31,6 +41,15 @@ public class ButtonPop : MonoBehaviour
         if (popping) return;   // ignore repeat clicks
         popping = true;
         timer = 0f;
+        if (clickClip != null) audioSource.PlayOneShot(clickClip);
+    }
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData e)
+    {
+        if (hoverClip == null) return;
+        var button = GetComponent<UnityEngine.UI.Button>();
+        if (button != null && !button.interactable) return;
+        audioSource.PlayOneShot(hoverClip);
     }
 
     void Update()

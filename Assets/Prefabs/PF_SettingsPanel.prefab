@@ -2061,6 +2061,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  clickClip: {fileID: 8300000, guid: 503eda364b9654788aef063c2559abdb, type: 3}
+  hoverClip: {fileID: 8300000, guid: 91f709609728f4778868a458f6f2933d, type: 3}
 --- !u!1 &4891789382153819193
 GameObject:
   m_ObjectHideFlags: 0

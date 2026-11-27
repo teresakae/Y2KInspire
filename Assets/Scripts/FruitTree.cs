@@ -28,10 +28,23 @@ public class FruitTree : MonoBehaviour
     [Tooltip("Runs when a fruit drops. Passes the fallen fruit. Used by tutorial tips.")]
     [SerializeField] private UnityEvent<Transform> onDrop;
 
+    [Tooltip("Played on every ram that counts (Tree_hit). Empty = silent.")]
+    [SerializeField] private AudioClip hitClip;
+    [Tooltip("Played with the hit when a fruit drops (Tree_shake). Empty = silent.")]
+    [SerializeField] private AudioClip shakeClip;
+
+    private AudioSource audioSource;
     SpriteRenderer canopy;   // the shaken child's sprite, for CanopyCovers
     Vector3 basePos;
     float nextHit, shakeTimer;
     float[] regrowAt;   // time each hanging fruit is due back, parallel to hangingFruit; 0 = not waiting
+
+    void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
+    }
 
     void Start()
     {
@@ -48,9 +61,11 @@ public class FruitTree : MonoBehaviour
         nextHit = Time.time + cooldown;
         shakeTimer = shakeTime;
         if (leafBurst != null) leafBurst.Play();
+        if (hitClip != null) audioSource.PlayOneShot(hitClip);
         if (fruitPrefab == null) return;
         GameObject f = TakeHangingFruit();
         if (f == null) return;   // empty tree still shakes, drops nothing
+        if (shakeClip != null) audioSource.PlayOneShot(shakeClip);   // only when fruit really falls
         // Falls straight down from where it hung, so it lands in front of the trunk.
         GameObject fruit = Instantiate(fruitPrefab, f.transform.position, Quaternion.identity);
         fruit.GetComponent<Fruit>().Fall(transform.position.y - dropBelow);

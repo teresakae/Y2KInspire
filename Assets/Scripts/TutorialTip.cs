@@ -94,6 +94,10 @@ public class TutorialTip : MonoBehaviour
         seen.Clear();
     }
 
+    [Tooltip("Played when a sign opens (UI_guide). Empty = silent.")]
+    [SerializeField] private AudioClip guideClip;
+
+    private AudioSource audioSource;
     bool showing, closing, hit;
     int shown;             // signs opened and closed so far
     float timer;
@@ -101,6 +105,13 @@ public class TutorialTip : MonoBehaviour
     Vector3 lastPos, moverStart;
     Vector3 baseScale;     // sign scale as authored, before juice
     string labelText;      // label as authored, restored when the sign goes back to waiting
+
+    void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
+    }
 
     void Start()
     {
@@ -203,6 +214,7 @@ public class TutorialTip : MonoBehaviour
         if (mover != null) moverStart = mover.position;
         showing = true;
         timer = 0f;
+        if (guideClip != null) audioSource.PlayOneShot(guideClip);
         sign.localScale = baseScale * popIn.Evaluate(0f);   // no full-size flash before the first LateUpdate
         sign.gameObject.SetActive(true);
     }
@@ -271,6 +283,13 @@ public class TutorialTip : MonoBehaviour
         }
         shown = showCount;
         gameObject.SetActive(false);
+    }
+
+    /// <summary>Hides the sign at once without counting it as seen, so it shows again after a restart. Used when the crow dies, so the sign doesn't cover the death.</summary>
+    public void Hide()
+    {
+        if (sign != null) sign.gameObject.SetActive(false);
+        enabled = false;
     }
 
     /// <summary>The target was hit (e.g. the snake bonked). Swaps the words and closes with a shake. Other targets are ignored.</summary>

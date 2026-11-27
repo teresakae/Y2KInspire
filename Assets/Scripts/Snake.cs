@@ -16,10 +16,12 @@ public class Snake : MonoBehaviour
     [SerializeField] private Sprite coiled;
     [Tooltip("Shown only while moving. Head points up.")]
     [SerializeField] private Sprite stretched;
-    [Tooltip("Inactive child (a red \"!\") switched on when the crow is eaten.")]
+    [Tooltip("Inactive child speech bubble with a \"!\" (PF_EatenBubble), switched on when the crow is eaten.")]
     [SerializeField] private GameObject eatenMark;
-    [Tooltip("Seconds the \"!\" shows before the level restarts.")]
-    [SerializeField] private float eatenDelay = 1.5f;
+    [Tooltip("Seconds the \"!\" shows before the lose screen fades in (or the level restarts if the scene has none).")]
+    [SerializeField] private float eatenDelay = 1f;
+    [Tooltip("Camera shake when the snake eats the crow (units). 0 = none.")]
+    [SerializeField] private float eatenShake = 0.15f;
     [Tooltip("The snake wanders to random points this far from where it started.")]
     [SerializeField] private float roamRadius = 3f;
     [Tooltip("Units per second.")]
@@ -57,10 +59,27 @@ public class Snake : MonoBehaviour
     [Tooltip("Runs when the cow's dash kills this snake. Passes the snake. Used by the tutorial sign.")]
     [SerializeField] private UnityEvent<Transform> onHit;
 
+    [Header("Sound")]
+    [Tooltip("Hiss takes (SFX_SnakeHiss1..3). One random take plays when first revealed and now and then while roaming. Empty = silent.")]
+    [SerializeField] private AudioClip[] hissClips;
+    [Tooltip("Sharp attack takes (SFX_SnakeAttack1..3). One random take plays when it eats the crow. Empty = uses a hiss take.")]
+    [SerializeField] private AudioClip[] attackClips;
+    [Tooltip("Shortest wait between roaming hisses (seconds).")]
+    [SerializeField] private float hissMinGap = 6f;
+    [Tooltip("Longest wait between roaming hisses (seconds).")]
+    [SerializeField] private float hissMaxGap = 12f;
+    [Tooltip("Volume of the reveal and roaming hisses.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float roamVolume = 0.4f;
+    [Tooltip("Pitch of the attack hiss. Below 1 = deeper.")]
+    [SerializeField] private float attackPitch = 0.9f;
+
     const float arriveDistance = 0.05f;
     const int roamTries = 10;   // random roam points tried before giving up and heading home: a snake boxed in by trees must not loop forever
     const float minSlide = 0.4f;   // a slide along a tree shorter than this fraction of a full step counts as stuck, or the snake wriggles on the spot
 
+    AudioSource audioSource;
+    float hissTimer;
     SpriteRenderer sr;
     Rigidbody2D rb;
     Collider2D col;
@@ -69,6 +88,8 @@ public class Snake : MonoBehaviour
     float warnTimer, pauseTimer, flipTimer, eatenTimer, dyingTimer;
     TreeLook[] trees;          // for the canopy test; found in Start because TreeLook places canopies in Awake
     FruitTree[] fruitTrees;
+    LoseScreen loseScreen;
+    SharedCamera cam;
     ContactFilter2D obstacleFilter;
     readonly Collider2D[] hits = new Collider2D[16];
 
@@ -80,8 +101,13 @@ public class Snake : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
         home = transform.position;
         target = home;
+        loseScreen = FindAnyObjectByType<LoseScreen>();   // none in test scenes: that is fine
+        cam = FindAnyObjectByType<SharedCamera>();
         if (crow == null) Debug.LogError($"{name}: missing Crow");
         if (fog == null) Debug.LogError($"{name}: missing Fog");
         if (coiled == null) Debug.LogError($"{name}: missing Coiled");
@@ -113,13 +139,34 @@ public class Snake : MonoBehaviour
         if (eaten)
         {
             eatenTimer -= Time.deltaTime;
-            // ponytail: direct reload until the lose screen exists
-            if (eatenTimer <= 0f) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            if (eatenTimer <= 0f)
+            {
+                // Show() ignores repeat calls, so calling it every frame is fine.
+                if (loseScreen != null) loseScreen.ShowEaten();
+                else SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);   // No lose screen in this scene (test scenes): restart directly.
+            }
             return;
         }
 
         // Once revealed it stays awake, even if it roams back under fog.
-        if (!revealed) revealed = fog == null || fog.IsClear(transform.position);
+        if (!revealed)
+        {
+            revealed = fog == null || fog.IsClear(transform.position);
+            if (revealed)
+            {
+                PlayHiss();
+                hissTimer = Random.Range(hissMinGap, hissMaxGap);
+            }
+        }
+        else if (hissClips != null && hissClips.Length > 0)
+        {
+            hissTimer -= Time.deltaTime;
+            if (hissTimer <= 0f)
+            {
+                PlayHiss();
+                hissTimer = Random.Range(hissMinGap, hissMaxGap);
+            }
+        }
         bool crowInRange = revealed && crow != null && crow.IsGrounded
             && Vector2.Distance(transform.position, crow.transform.position) <= (warning ? warnRange + calmMargin : warnRange);
 
@@ -155,10 +202,25 @@ public class Snake : MonoBehaviour
     void EatCrow()
     {
         eaten = true;
+        AudioClip[] bites = (attackClips != null && attackClips.Length > 0) ? attackClips : hissClips;
+        if (bites != null && bites.Length > 0)
+        {
+            audioSource.pitch = attackPitch;
+            audioSource.PlayOneShot(bites[Random.Range(0, bites.Length)], 1f);
+        }
         eatenTimer = eatenDelay;
         Debug.Log($"{name} ate the crow");
         crow.gameObject.SetActive(false);
+        if (cam != null) cam.Shake(eatenShake);
+        // Tutorial signs would cover the death bubble / drowning.
+        foreach (TutorialTip tip in FindObjectsByType<TutorialTip>()) tip.Hide();
         if (eatenMark != null) eatenMark.SetActive(true);
+    }
+
+    void PlayHiss()
+    {
+        if (hissClips == null || hissClips.Length == 0) return;
+        audioSource.PlayOneShot(hissClips[Random.Range(0, hissClips.Length)], roamVolume);
     }
 
     void Coil()

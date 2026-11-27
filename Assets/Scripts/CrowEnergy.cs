@@ -18,24 +18,39 @@ public class CrowEnergy : MonoBehaviour
     [SerializeField] private Image bar;
     [Tooltip("If the bar's Canvas is World Space, it floats this far above the crow.")]
     [SerializeField] private Vector2 barOffset = new Vector2(0f, 1.2f);
-    [Tooltip("Seconds between drowning (landing on Water) and the level restarting.")]
-    [SerializeField] private float drownDelay = 1.5f;
+    [Tooltip("Seconds between drowning and the lose screen (or a restart if the scene has none).")]
+    [SerializeField] private float drownDelay = 0.6f;
     [Tooltip("Seconds the crow can stand still over Water before it drowns. Stops a quick change of direction from counting as landing.")]
     [Range(0f, 2f)]
     [SerializeField] private float landGrace = 0.3f;
+    [Tooltip("Camera shake when the crow drowns (units). 0 = none.")]
+    [SerializeField] private float drownShake = 0.12f;
 
+    [Tooltip("Played when the crow eats fruit (Crow_eat). Empty = silent.")]
+    [SerializeField] private AudioClip eatClip;
+    [Tooltip("Played when the crow drowns. Empty = silent.")]
+    [SerializeField] private AudioClip drownClip;
+
+    private AudioSource audioSource;
     PlayerControl player;
     Rigidbody2D rb;
     float energy;
     bool drowned;
     float drownTimer;
     float wetTime;
+    LoseScreen loseScreen;
+    SharedCamera cam;
 
     void Awake()
     {
+        loseScreen = FindAnyObjectByType<LoseScreen>();   // none in test scenes: that is fine
+        cam = FindAnyObjectByType<SharedCamera>();
         player = GetComponent<PlayerControl>();
         rb = GetComponent<Rigidbody2D>();
         energy = maxEnergy;
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
         if (bar == null) Debug.LogError($"{name}: missing Bar");
     }
 
@@ -44,7 +59,11 @@ public class CrowEnergy : MonoBehaviour
         if (drowned)
         {
             drownTimer -= Time.deltaTime;
-            if (drownTimer <= 0f) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            if (drownTimer <= 0f)
+            {
+                if (loseScreen != null) loseScreen.ShowDrowned();
+                else SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);   // No lose screen in this scene (test scenes): restart directly.
+            }
             return;
         }
         if (rb.linearVelocity.sqrMagnitude > 0.01f) energy -= drainPerSecond * Time.deltaTime;
@@ -63,11 +82,15 @@ public class CrowEnergy : MonoBehaviour
         return false;
     }
 
-    // Direct restart until a lose screen exists, same as a snake bite.
+    // After the delay the lose screen shows (a direct restart if the scene has none), same as a snake bite.
     void Drown()
     {
         drowned = true;
+        if (drownClip != null) audioSource.PlayOneShot(drownClip);
         drownTimer = drownDelay;
+        if (cam != null) cam.Shake(drownShake);
+        // Tutorial signs would cover the death bubble / drowning.
+        foreach (TutorialTip tip in FindObjectsByType<TutorialTip>()) tip.Hide();
         player.enabled = false;
         rb.linearVelocity = Vector2.zero;
         foreach (var sr in GetComponentsInChildren<SpriteRenderer>()) sr.enabled = false;
@@ -88,5 +111,6 @@ public class CrowEnergy : MonoBehaviour
     public void Eat(float amount)
     {
         energy = Mathf.Clamp(energy + amount, 0f, maxEnergy);
+        if (eatClip != null) audioSource.PlayOneShot(eatClip);
     }
 }

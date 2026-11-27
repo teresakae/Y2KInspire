@@ -86,7 +86,7 @@ Level1 `Tutorial` (root): `controls_cow`, `controls_space` and `controls_crow` S
 
 ## Tuning
 
-All on `TutorialTip`: `Show Delay` 0.4 (script default), `View Margin` 0.05, `Edge Padding` 0.3, `Pop In Time` 0.4, `Pop Out Time` 0.25, `Key Loop Time` 1.4, `Key Squash` 0.5. Per-tip values are in the tables above.
+All on `TutorialTip`: `Show Delay` 0.4 (script default), `View Margin` 0.05, `Edge Padding` 0.3, `Pop In Time` 0.4, `Pop Out Time` 0.25, `Key Loop Time` 1.4, `Key Squash` 0.5. Per-tip values are in the tables above. `Guide Clip` (`UI_guide`) plays in `Open()` when a tip appears, through an AudioSource found in `Awake` (added with Play On Awake off if missing); empty = silent.
 
 ## Gotchas
 

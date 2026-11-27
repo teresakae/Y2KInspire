@@ -408,6 +408,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   keyLoopTime: 1.4
   keySquash: 0.5
+  guideClip: {fileID: 8300000, guid: 95c94f818051844dda29490141ff0517, type: 3}
 --- !u!1 &6341977270558404609
 GameObject:
   m_ObjectHideFlags: 0

@@ -16,6 +16,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 1. The cow dashes into the tree's collider. `CowRam` checks its charge and calls `FruitTree.Hit(charge)`.
 2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. Each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. When all are hidden the tree only shakes and drops nothing. A hidden hanging fruit grows back on the canopy `Regrow Time` seconds after it was picked (`FruitTree.Update` checks a due time per fruit).
+2b. Sounds: every counted ram plays `Hit Clip`; `Shake Clip` plays only when a fruit actually drops. `Fruit` plays `Drop Clip` when the falling fruit lands. Each script uses an AudioSource found in `Awake` (added with Play On Awake off if missing); empty clip = silent.
 3. Every counting ram also plays `Leaf Burst` if it is set, even on an empty tree: 4 to 6 leaves (`Assets/Prefabs/PF_LeafBurst`, one child `LeafBurst` per fruit tree, placed at the canopy centre) appear anywhere inside the canopy and fall, fluttering and spinning, fading over 1.8 to 2.6 s. Half are drawn in front of the canopy (`LeafBurst`, order 18), half behind it (child `Back`, order 16, so they only show once they drop below the canopy edge). See `particles.md`.
 4. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
 3b. If `Fruit > Lifetime` is above 0, a timer starts once the fruit is on the ground (after landing if it fell, from the first frame if placed on the ground). Over the last `Fade Time` seconds its sprite alpha drops to 0, then it is destroyed. 0 = stays forever.
@@ -61,6 +62,9 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 | Seconds on ground before it fades | PF_Fruit | Fruit > Lifetime | 0 (default = stays forever) |
 | Fade-out length (s) | PF_Fruit | Fruit > Fade Time | 1 (default) |
 | Min charge to drop | Cow | CowRam > Min Charge | 0.5 (default) |
+| Hit sound (every counted ram) | Tree | FruitTree > Hit Clip | `Tree_hit` |
+| Shake sound (only when a fruit drops) | Tree | FruitTree > Shake Clip | `Tree_shake` |
+| Fruit landing sound | PF_Fruit | Fruit > Drop Clip | `Tree_dropfruit` |
 | Sway (trunk / canopy / hanging fruit) | materials | `M_TreeTrunk`, `M_TreeCanopy`, `M_TreeFruit` > Sway amount / Base sway / Wind lean / Wave scale / Wave speed / Flutter | trunk 0.024 / 0 / 0.12; canopy 0.06 / 0.4 / 0.3; fruit 0.03 / 1 / 0.15; shared 0.6 / 1.0 / 0.15 |
 
 ## Gotchas

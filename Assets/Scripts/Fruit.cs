@@ -18,6 +18,10 @@ public class Fruit : MonoBehaviour
     [Tooltip("Seconds the fade-out takes, at the end of the lifetime.")]
     [SerializeField] private float fadeTime = 1f;
 
+    [Tooltip("Played when a falling fruit lands (Tree_dropfruit). Empty = silent.")]
+    [SerializeField] private AudioClip dropClip;
+
+    private AudioSource audioSource;
     SpriteRenderer sr;
     Collider2D col;
     int groundOrder;
@@ -30,6 +34,9 @@ public class Fruit : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
         groundOrder = sr.sortingOrder;
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
     }
 
     // FruitTree calls this right after spawning it at the hanging fruit's spot.
@@ -71,6 +78,7 @@ public class Fruit : MonoBehaviour
             else
             {
                 falling = false;
+                if (dropClip != null) audioSource.PlayOneShot(dropClip);
                 col.enabled = true;
                 sr.sortingOrder = groundOrder;
                 if (landedSprite != null) sr.sprite = landedSprite;   // splits open on the ground

@@ -135,8 +135,9 @@ Gimersia Inspire 2026 (Indonesia).
 | Crow lands / eats fruit | Partial | Eats by flying over the fruit; "landed" is not a state. Not wired in the scene yet. See `players.md`. |
 | Trees and fruit | Partial | `FruitTree` and `Fruit` scripts exist. Not wired in the scene yet. See `trees.md`. |
 | Cow rams trees | Partial | Charged ram on Space (`CowRam`). Not wired in the scene yet. See `players.md`. |
-| Moo guidance (audio) | Placeholder: speech bubble on a timer (`MooPrompt`, in `PF_HUD`). No sound. | No sound clips yet. See `level.md`. |
-| Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. No sfx/vfx. Not wired in the scene yet. See `snakes.md`. |
+| Moo guidance (audio) | Placeholder: speech bubble on a timer (`MooPrompt`, in `PF_HUD`). Moo sound plays on each bubble, panned toward the goal (`Cow_mooHerd`). | Player moo clips `Cow_mooPlayer1/2` unused. See `level.md`. |
+| Music, ambience, sfx | Menu and level music, level ambience, button, tree, fruit, eat, snake hiss, tip and exit sounds plus moo, crow drown, snake hit and attack, cow and crow move loops. All clips assigned (see `level.md` Audio). Menu music carries through MainMenu, Intro, HomeScreen (`MenuMusic`). | Missing: finish-area bells (clip not delivered). |
+| Snakes (hidden, warnings, kill, eat) | Partial | `Snake` script: roams, coiled warning, eats a grounded crow. Hiss sound, no vfx. Not wired in the scene yet. See `snakes.md`. |
 | Cow rams snakes | Partial | Strong dash kills a snake (`CowRam.IsStrongDash`). Not wired in the scene yet. See `snakes.md`. |
 | Win condition | Placeholder: exit fades to white and restarts Level1 once both animals are in it (`LevelExit`). | See `level.md`. |
 | Lose and restart | Partial | Snake bite reloads the scene, no lose screen. Not wired in the scene yet. |

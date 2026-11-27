@@ -46,6 +46,8 @@ public class CowRam : MonoBehaviour
     [SerializeField] private Color readyFlashColor = new Color(1f, 0.95f, 0.85f);
     [Tooltip("Seconds the ready flash takes to fade.")]
     [SerializeField] private float readyFlashTime = 0.12f;
+    [Tooltip("Small camera kick the moment the charge is ready (units). 0 = none.")]
+    [SerializeField] private float readyShake = 0.06f;
 
     [Header("Aim lock")]
     [Tooltip("Crosshair shown on the locked snake or fruit tree (a prefab). Empty = no crosshair, but the lock still works.")]
@@ -68,6 +70,10 @@ public class CowRam : MonoBehaviour
     [Tooltip("Crosshair spin (degrees per second).")]
     [SerializeField] private float crosshairSpin = 90f;
 
+    [Tooltip("Played when the dash kills a snake. Empty = silent.")]
+    [SerializeField] private AudioClip snakeHitClip;
+
+    private AudioSource audioSource;
     PlayerControl player;
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -89,6 +95,9 @@ public class CowRam : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
         baseScale = transform.localScale;
         baseColor = sr.color;
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
         if (cam == null) Debug.LogError($"{name}: missing Cam");
     }
 
@@ -154,6 +163,7 @@ public class CowRam : MonoBehaviour
             {
                 ready = true;   // once per charge
                 popTimer = readyFlashTime;
+                if (cam != null) cam.Shake(readyShake);
             }
             popTimer -= Time.deltaTime;
             float pop = Mathf.Clamp01(popTimer / readyFlashTime);
@@ -230,6 +240,7 @@ public class CowRam : MonoBehaviour
     // Called by the snake it kills: same thump as a strong tree hit, so the kill lands.
     public void HitSnake()
     {
+        if (snakeHitClip != null) audioSource.PlayOneShot(snakeHitClip);
         if (cam != null) cam.Shake(snakeShake);
         StartHop();
     }

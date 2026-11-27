@@ -3,7 +3,6 @@ using UnityEngine;
 /// <summary>
 /// The herd's moo as a speech bubble on the HUD: it pops up every few seconds and points toward the goal, sitting on it when it is on screen and on the screen edge when it is not.
 /// </summary>
-// ponytail: the moo sound goes here later (play an AudioSource when a moo starts, panned toward the goal).
 public class MooPrompt : MonoBehaviour
 {
     [Header("Timing")]
@@ -49,11 +48,26 @@ public class MooPrompt : MonoBehaviour
     [Tooltip("Wiggle speed (radians per second).")]
     [SerializeField] private float wiggleSpeed = 14f;
 
+    [Header("Sound")]
+    [Tooltip("The herd's moo (Cow_mooHerd). Played at the start of each bubble, panned toward the goal. Empty = silent.")]
+    [SerializeField] private AudioClip mooClip;
+    [Tooltip("Moo volume.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float mooVolume = 0.8f;
+    [Tooltip("How far the moo pans toward the goal's side. 0 = centre, 1 = full left or right.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float panAmount = 0.7f;
+
     Canvas canvas;
+    AudioSource audioSource;
+    float lastT = float.MaxValue;   // large so the first frame counts as a wrap: the level opens on a moo
 
     void Awake()
     {
         if (cam == null) cam = Camera.main;
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();   // ponytail: auto-added so no scene setup is needed
+        audioSource.playOnAwake = false;
         canvas = GetComponentInParent<Canvas>();
         if (canvas != null) canvas = canvas.rootCanvas;
     }
@@ -79,6 +93,8 @@ public class MooPrompt : MonoBehaviour
         }
 
         float t = Time.timeSinceLevelLoad % interval;   // restarts at 0 on every level load, so the level opens on a moo
+        if (t < lastT) PlayMoo();   // t dropped: a new cycle began
+        lastT = t;
         float a = Mathf.Clamp01(Mathf.Min(t, 2f * fadeTime + holdTime - t) / fadeTime);   // up, hold, down
         group.alpha = a * maxAlpha;
         if (a <= 0f) return;   // hidden: skip the placement maths
@@ -107,6 +123,14 @@ public class MooPrompt : MonoBehaviour
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         tail.localEulerAngles = new Vector3(0f, 0f, angle + tailAngleOffset);
         tail.anchoredPosition = ToEdge(dir, bubble.rect.size * 0.5f);   // sits on the bubble's edge, half hidden behind the body
+    }
+
+    void PlayMoo()
+    {
+        if (mooClip == null) return;
+        float side = (cam.WorldToScreenPoint(target.position).x - Screen.width * 0.5f) / (Screen.width * 0.5f);
+        audioSource.panStereo = Mathf.Clamp(side, -1f, 1f) * panAmount;
+        audioSource.PlayOneShot(mooClip, mooVolume);
     }
 
     // Stretches or shrinks dir until it touches a rect of this half-size: the smaller of the x and y factors.

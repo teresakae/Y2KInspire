@@ -39,6 +39,17 @@ public class PlayerControl : MonoBehaviour
     [Tooltip("Optional. Emits only while the animal is flying (moving, not tired). Leave empty for none.")]
     [SerializeField] private ParticleSystem flyParticles;
 
+    [Header("Sound")]
+    [Tooltip("Looping movement sound: cow footsteps / crow wing flaps. Empty = silent.")]
+    [SerializeField] private AudioClip moveLoop;
+    [Tooltip("Volume of the movement loop.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float moveVolume = 0.5f;
+    [Tooltip("Lowest random pitch each time the loop starts.")]
+    [SerializeField] private float pitchMin = 0.9f;
+    [Tooltip("Highest random pitch each time the loop starts.")]
+    [SerializeField] private float pitchMax = 1.1f;
+
     // Set by CrowEnergy: 1 = normal, lower = tired.
     [HideInInspector] public float speedScale = 1f;
     // Last non-zero input direction. CowRam aims with it.
@@ -50,12 +61,19 @@ public class PlayerControl : MonoBehaviour
     SpriteRenderer sr;
     Sprite lastFacing;
     Vector3 shadowOffset;
+    AudioSource loopSource;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
         lastFacing = sr.sprite;
+        // Its own source: stopping or pausing it must not cut the one-shot sounds CowRam/CrowEnergy play on the first source.
+        loopSource = gameObject.AddComponent<AudioSource>();
+        loopSource.loop = true;
+        loopSource.playOnAwake = false;
+        loopSource.clip = moveLoop;
+        loopSource.volume = moveVolume;
         if (flyShadow != null)
         {
             shadowOffset = flyShadow.transform.position - transform.position;
@@ -68,7 +86,7 @@ public class PlayerControl : MonoBehaviour
 
     void Update()
     {
-        if (Time.timeScale == 0f) return; // paused
+        if (Time.timeScale == 0f) { SetLoop(false); return; } // paused
         // ponytail: keyboard only; add gamepad or an Input Actions asset if needed
         var kb = Keyboard.current;
         float x = 0, y = 0;
@@ -87,11 +105,13 @@ public class PlayerControl : MonoBehaviour
         if (aimOnly)
         {
             sr.sprite = lastFacing;
+            SetLoop(false);
             return;
         }
 
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
         bool tired = speedScale < 1f;
+        SetLoop(moving && !tired);
         bool flying = moving && fly != null && !tired;
         Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : y > 0 ? walkUp : y < 0 ? walkDown : null;
         if (flyParticles != null)
@@ -119,5 +139,19 @@ public class PlayerControl : MonoBehaviour
         }
 
         rb.linearVelocity = new Vector2(x, y) * movSpeed * speedScale;
+    }
+
+    void OnDisable()
+    {
+        SetLoop(false);   // Drown disables this script while the animal may still be "moving"
+    }
+
+    void SetLoop(bool on)
+    {
+        if (moveLoop == null || loopSource == null || loopSource.isPlaying == on) return;
+        if (!on) { loopSource.Stop(); return; }
+        loopSource.pitch = Random.Range(pitchMin, pitchMax);
+        loopSource.time = Random.value * moveLoop.length * 0.99f;   // random start so two animals don't step in sync
+        loopSource.Play();
     }
 }

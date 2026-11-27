@@ -34,7 +34,7 @@ Order of events:
 4. The crow clears fog (see `fog.md`), the cow follows, rams the tree, the crow eats (see `players.md`, `trees.md`).
 5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` and starts fading to white. When the fade starts, `LevelExit` begins loading `Next Scene` in the background (`LoadSceneAsync`, activation held); when alpha reaches 1 it lets the scene switch on. One frame's fade step is capped at 0.05 s so a slow frame after a load can't jump the fade. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
 
-`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and sits on the bubble's edge on that side (straight down when the goal is on screen; there is no Tail Distance field, the script uses the bubble's size); `Tail Angle Offset` fixes the art direction. Each moo also pops (`Pop Curve` over `Pop Time`, 0.35 s) and the bubble wiggles `Wiggle Angle` degrees each way at `Wiggle Speed`. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden; the moo sound (AudioSource) goes here later.
+`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and sits on the bubble's edge on that side (straight down when the goal is on screen; there is no Tail Distance field, the script uses the bubble's size); `Tail Angle Offset` fixes the art direction. Each moo also pops (`Pop Curve` over `Pop Time`, 0.35 s) and the bubble wiggles `Wiggle Angle` degrees each way at `Wiggle Speed`. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden. Moo sound: at the start of each cycle (the first frame, then each time `t` wraps) `PlayMoo()` pans the `AudioSource` (`panStereo`) by the goal's screen side (left of centre = negative, right = positive) times `Pan Amount`, then plays ``Moo Clip`` once at `Moo Volume`. The AudioSource is found in `Awake` (added with Play On Awake off if missing). No target or empty clip = silent. Fields: `Moo Clip` `Cow_mooHerd` (set in `PF_HUD`), `Moo Volume` 0.8, `Pan Amount` 0.7.
 
 Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `Hold Time` 1.6, `Max Alpha` 0.95, `Bubble`, `Tail` (RectTransforms), `Group` (CanvasGroup), `Cam` (empty = Main Camera), `Target` (Transform), `Edge Padding` 175 px, `On Screen Offset` 110 px, `Tail Angle Offset` 90 (the tail art points down), `Pop Curve`, `Pop Time` 0.35, `Wiggle Angle` 4, `Wiggle Speed` 14. Script defaults differ (Fade Time 0.6, Hold Time 1, Max Alpha 0.6, Edge Padding 80, On Screen Offset 60).
 
@@ -43,6 +43,20 @@ Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `H
 `LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" (Start clears it; kept for a later Continue button, see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
 
 ## Scene setup
+
+Audio (both levels). Two root objects, each with an AudioSource: Loop on, Play On Awake on, Spatial Blend 0 (2D).
+
+| Object | AudioSource > AudioClip | Volume |
+|---|---|---|
+| `Music` | `BGM_forest` | 0.4 |
+| `Ambience` | `AMB_Nature` | 0.2 |
+| `Ambience` (Level2 only, second AudioSource) | `AMB_Water` | 0.15 |
+
+Exit sound: `LevelExit > Transition Clip` (`UI_areaTransition`) plays once in `StartLeaving()`, when both animals are in the exit and the fade starts. Empty = silent. Clips live in `Assets/Audio`. All sound fields are now assigned (prefabs `PF_HUD`, `PF_SettingsPanel`, `PF_Fruit`, `PF_TutorialTip`, plus scene objects): `ButtonPop.clickClip` `UI_buttonClick`; `FruitTree.hitClip` `SFX_TreeHit`, `shakeClip` `SFX_TreeShake`; `Fruit.dropClip` `SFX_FruitDrop`; `CrowEnergy.eatClip` `SFX_CrowEat`, `drownClip` `Crow_drown`; `CowRam.snakeHitClip` `SFX_SnakeHit`; `Snake.hissClip` `SFX_SnakeHiss`, `attackClip` `SFX_SnakeAttack`; `LevelExit.transitionClip` `SFX_AreaTransition`; `TutorialTip.guideClip` `UI_guide`; `MooPrompt.mooClip` `Cow_mooHerd`; `PlayerControl.moveLoop` `Cow_walk` / `Crow_fly2`.
+
+`Assets/Audio/SFX` holds single takes cut with ffmpeg (16-bit WAV, 0.08 s fade-out) from the sound sheets, which stay untouched: `SFX_TreeHit` = `Tree_hit` 0 to 0.6 s; `SFX_SnakeHit` = `Tree_hit` 0.88 to 1.45 s (silent, unused); `SFX_FruitDrop` = `Tree_dropfruit` 0 to 0.8 s; `SFX_TreeShake` = `Tree_shake` 0 to 2.2 s; `SFX_CrowEat` = `Crow_eat` 0 to 2.0 s; `SFX_AreaTransition` = `UI_areaTransition` 0.4 to 4.0 s; `SFX_SnakeHiss`/`SFX_SnakeAttack` (old, silent or unused); `SFX_SnakeHiss1..3` = `Snake_hiss` 0.65+0.6 s, 1.33+0.45 s, 1.82+0.46 s; `SFX_SnakeAttack1..3` = `Snake_attack` 11.9+0.91 s, 16.4+0.85 s, 21.3+0.7 s (48 kHz, 0.05 s fade-out); `SFX_CrowDrown` = `Crow_drown` 0.46+0.74 s; `SFX_CrowEat` is `Crow_eat` louder (see `players.md`).
+
+Not built: finish-area cow bells (clip not delivered).
 
 Tree walls: wall trees (see `trees.md`, "Wall trees"). Fog is translucent and drawn over them, so they show through as misty silhouettes. They block the cow. They should block the crow too, but that is not working yet (below).
 
@@ -103,6 +117,7 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 | Hold-inside margin | Main Camera | SharedCamera > Edge Margin | 0.5 |
 | Shake fade (s) | Main Camera | SharedCamera > Shake Time | 0.25 (`Shake(strength)` is called by `CowRam` on a ram hit, see players.md) |
 | Seconds between moos | MooBubble | MooPrompt > Interval | 6 |
+| Moo sound / volume / pan | MooBubble | MooPrompt > Moo Clip / Moo Volume / Pan Amount | none (Moo Clip cleared 28 Nov 2026: too many cow noises; the bubble is silent) / 0.8 / 0.7 |
 | Moo fade (s) | MooBubble | MooPrompt > Fade Time | 0.2 |
 | Moo hold (s) | MooBubble | MooPrompt > Hold Time | 1.6 |
 | Moo strength | MooBubble | MooPrompt > Max Alpha | 0.95 |
@@ -110,6 +125,7 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 | Crow | Exit | LevelExit > Crow | Crow's trigger CircleCollider2D (to set) |
 | Fade image | Exit | LevelExit > Fade | HUD > Fade |
 | Fade length (s) | Exit | LevelExit > Fade Time | 1.5 |
+| Exit sound | Exit | LevelExit > Transition Clip | `UI_areaTransition` |
 | Next level | Exit | LevelExit > Next Scene | Level1: `Level2`. Level2: `HomeScreen` |
 | Fog area / position / puffs / start clearings | Fog Grid | see `fog.md` | 48 x 24 at (12.2, -1.4), 2 clearings |
 | Crow energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 |
@@ -126,7 +142,7 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 
 ## Not built yet
 
-- Moo sound. Right now it is only text.
+- Player moo clips `Cow_mooPlayer1/2` are in `Assets/Audio`, unused; `Cow_mooHerd` is no longer assigned either.
 - A solid collider on the crow, and the `Cow` layer, so tree walls stop the crow.
 - The `Snake` object is in Level1 but inactive; snakes live in Level2.
 

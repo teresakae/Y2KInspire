@@ -4,7 +4,7 @@ Status: script, scene and title art built. Build index 0. Motion strength not tu
 
 ## What it is
 
-The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start always begins a fresh game: it clears the saved level and the tutorial tips already seen, then plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, Volume, Screen shake and Motion sliders and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Soft fog puffs drift slowly left and right in the bottom-left corner behind the buttons (`TitleArt > BottomMist`). Clicking a button squashes it for 0.2 s, then the action runs.
+The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start always begins a fresh game: it clears the saved level and the tutorial tips already seen, then plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, Volume, Screen shake and Motion sliders and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Soft fog puffs drift slowly left and right in the bottom-left corner behind the buttons (`TitleArt > BottomMist`). Clicking a button squashes it for 0.2 s and plays a click sound, then the action runs. Menu music loops from the scene's `Music` object.
 
 ## Where it lives
 
@@ -36,7 +36,7 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 
 ## Intro (opening video)
 
-`Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `MainMenu > First Level` is `Intro`, so Start goes here when there is no save; with a save, Start skips it and loads the saved level.
+`Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `Main Camera` also has an `AudioListener` (added 28 Nov 2026; the scene had none, so the menu music carried over by `MenuMusic` was inaudible). `MainMenu > First Level` is `Intro`, so Start goes here when there is no save; with a save, Start skips it and loads the saved level.
 
 - Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
 - `Start` begins loading `Intro > Next Scene` (default `Level1`) in the background with activation held, so the level is ready behind the video. When the video ends or the `SkipButton` is clicked, `Leave()` starts a fade to white (`Canvas > Fade`, `Fade Time` 0.5 s, step capped at 0.05 s per frame); at full white the loaded scene switches on. Input is ignored once leaving. If the video fails to load it logs an error and leaves the same way. No `Fade` Image = logs an error and switches at once.
@@ -239,7 +239,9 @@ Motion was doubled on 23 Nov (still not tuned by the owner). Ripple scale 6 and 
 | Color Adjustments | saturation +12, post exposure +0.1, colour filter (1, 0.985, 0.955) |
 | Film Grain | Thin1, intensity 0.1 |
 
-`ButtonPop` (on each button): `Curve` scale 1, 0.9 at 40%, 1.05 at 75%, 1 at the end; `Duration` 0.2 s. Repeat clicks while it plays are ignored.
+`ButtonPop` (on each button): `Curve` scale 1, 0.9 at 40%, 1.05 at 75%, 1 at the end; `Duration` 0.2 s. Repeat clicks while it plays are ignored. `Click Clip` (`UI_buttonClick`) is played by `Pop()` through an AudioSource on the button (found in `Awake`, added with Play On Awake off if missing). Empty = silent. `Hover Clip` (`UI_hover.mp3`) plays when the pointer enters the button (`IPointerEnterHandler`), only if the Button is interactable. Both clips are wired on every ButtonPop in all scenes, `PF_HUD` and `PF_SettingsPanel`. Clips are assigned per button (or on the prefab) in the Inspector.
+
+Music: root object `Music` in `MainMenu` has an AudioSource: `AudioClip` `BGM_menu`, Loop on, Play On Awake on, Volume 0.5, Spatial Blend 0 (2D). Clips live in `Assets/Audio`. `MenuMusic` (`Assets/Scripts/MenuMusic.cs`) is on `Music` in `MainMenu`, and `Intro` and `HomeScreen` each have their own `Music` object (same AudioSource settings, plus `MenuMusic`). It marks the object `DontDestroyOnLoad`, so `BGM_menu` plays on without restarting from `MainMenu` into `Intro` and from `HomeScreen` back to `MainMenu`; a duplicate copy in the next scene destroys itself. Any scene not in its `Keep In Scenes` list (default `MainMenu`, `Intro`, `HomeScreen`) destroys it, so the level music takes over. `ButtonPop.clickClip` is `UI_buttonClick` on every button (assigned in `PF_HUD`, `PF_SettingsPanel` and the scenes). Browsers only start sound after the first click or key.
 
 Title lettering: `TitleArt > Title > SpriteRenderer` shows `Assets/Art/Title/title logo.png`, slice `title logo` (the whole 688 x 540 image, PPU 100, centre pivot), at position (-11.8, 5.6), order 8, material `M_TitleLogo`. The artist's halves `title (1)_0` (top) and `title (1)_1` (bottom) are unused. To swap: put a new sprite on that SpriteRenderer, set Single sprite mode in its import, and move the object to taste.
 
