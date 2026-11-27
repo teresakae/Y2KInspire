@@ -88,6 +88,12 @@ public class TutorialTip : MonoBehaviour
         seen = new List<string>();
     }
 
+    // Main menu Start begins a fresh game, so every tip shows again.
+    public static void ForgetAll()
+    {
+        seen.Clear();
+    }
+
     bool showing, closing, hit;
     int shown;             // signs opened and closed so far
     float timer;

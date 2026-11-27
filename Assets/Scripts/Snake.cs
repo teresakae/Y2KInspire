@@ -32,6 +32,8 @@ public class Snake : MonoBehaviour
     [SerializeField] private float spriteAngle = -90f;
     [Tooltip("A grounded crow this close makes the snake warn.")]
     [SerializeField] private float warnRange = 1.5f;
+    [Tooltip("A warning snake calms down only once the crow is this much past Warn Range (or takes off). Stops it flicking between coiled and chasing when a tired crow waddles at the edge.")]
+    [SerializeField] private float calmMargin = 1f;
     [Tooltip("Seconds of warning before the crow is eaten.")]
     [SerializeField] private float warnTime = 1f;
     [Tooltip("Crow within this distance = slither straight at it. 0 = never chase, just roam.")]
@@ -69,6 +71,9 @@ public class Snake : MonoBehaviour
     FruitTree[] fruitTrees;
     ContactFilter2D obstacleFilter;
     readonly Collider2D[] hits = new Collider2D[16];
+
+    // CowRam only locks onto snakes the players have seen, and not ones already fading.
+    public bool CanBeLocked => revealed && !dying;
 
     void Awake()
     {
@@ -116,7 +121,7 @@ public class Snake : MonoBehaviour
         // Once revealed it stays awake, even if it roams back under fog.
         if (!revealed) revealed = fog == null || fog.IsClear(transform.position);
         bool crowInRange = revealed && crow != null && crow.IsGrounded
-            && Vector2.Distance(transform.position, crow.transform.position) <= warnRange;
+            && Vector2.Distance(transform.position, crow.transform.position) <= (warning ? warnRange + calmMargin : warnRange);
 
         if (!crowInRange)
         {
@@ -258,7 +263,11 @@ public class Snake : MonoBehaviour
 
     void TryDie(Collider2D other)
     {
-        if (!eaten && !dying && other.TryGetComponent(out CowRam ram) && ram.IsStrongDash) Die();
+        if (!eaten && !dying && other.TryGetComponent(out CowRam ram) && ram.IsStrongDash)
+        {
+            ram.HitSnake();
+            Die();
+        }
     }
 
     void Die()

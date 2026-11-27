@@ -4,7 +4,7 @@ Status: script, scene and title art built. Build index 0. Motion strength not tu
 
 ## What it is
 
-The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start resumes the last level the players reached if a save exists (and the save is not the end scene); otherwise it plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, a volume slider and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Clicking a button squashes it for 0.2 s, then the action runs.
+The first screen: a painted title picture with a column of buttons on the left. The picture is the sky, a green hill, fog, the cow and the crow, with their shadows and the title lettering. Every layer drifts a little (bob, tilt, breathe), out of step, so the screen feels alive without any real animation. Buttons: Start, Settings, Credits. Start always begins a fresh game: it clears the saved level and the tutorial tips already seen, then plays the opening video (Intro scene), then Level1. Settings opens a panel with a controls card, a fullscreen toggle, a volume slider and a Back button. Credits opens a panel with placeholder lines. Small gold motes drift up over the picture (`TitleArt > Motes`). Clicking a button squashes it for 0.2 s, then the action runs.
 
 ## Where it lives
 
@@ -27,7 +27,7 @@ PlayerPrefs keys:
 
 | Key | Type | Written by | Meaning |
 |---|---|---|---|
-| `SavedLevel` | string | `LevelExit`, `PauseMenu.SaveAndQuit` | Scene name of the level reached. Start loads it unless it is empty or equals `MainMenu > End Scene` (`HomeScreen`, which a finished game saves); then Start loads `First Level`. |
+| `SavedLevel` | string | `LevelExit`, `PauseMenu.SaveAndQuit` | Scene name of the level reached. Start deletes it and always loads `First Level` (`Intro`), so nothing reads it at the moment (kept for a later Continue button). |
 | `Volume` | float 0-1 | `SettingsPanel.SetVolume` | Master volume. Default 1. |
 
 Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist otherwise. To reset the save while testing: `Edit > Clear All PlayerPrefs`.
@@ -54,7 +54,30 @@ Gotchas:
 
 ## Home screen
 
-`Assets/Scripts/HomeScreen.cs` is on the Canvas of `Assets/Scenes/HomeScreen.unity` (build index 4, reached from Level2's exit). Field `Menu Scene` (default `MainMenu`). One public method, `BackToMenu()`, loads it; wire it to the scene's button OnClick. It leaves `PlayerPrefs` alone, so Start still resumes the save (Start ignores a `HomeScreen` save, see `MainMenu > End Scene`). The scene must be in `File > Build Profiles`.
+The ending cutscene. `Assets/Scripts/HomeScreen.cs` is on the Canvas of `Assets/Scenes/HomeScreen.unity` (build index 4, reached from Level2's exit, which fades to white first). A timer in `Update` drives three CanvasGroup alphas:
+
+1. Scene opens white. Text ("You're home." / "The herd was waiting.") fades in, holds, fades out.
+2. `EndPicture` (`Assets/Art/Cutscene/end.png`, "The End." drawn in) fades in over the white.
+3. After a short beat the Back to menu button fades in. It is not clickable (`interactable` and `blocksRaycasts` off) until it starts to appear.
+
+`BackToMenu()` loads `Menu Scene` (wired to the button OnClick). Start on the menu then begins a fresh game. The scene must be in `File > Build Profiles`.
+
+Tuning, all on `Canvas > HomeScreen`:
+
+| What | Object | Field | Value |
+|---|---|---|---|
+| Menu to load | Canvas | `Menu Scene` | `MainMenu` |
+| Text group | Canvas | `Text Group` | `Canvas > Text` |
+| Picture group | Canvas | `Picture` | `Canvas > EndPicture` |
+| Button group | Canvas | `Buttons` | `Canvas > Buttons` |
+| Text fade in | Canvas | `Text Fade In` | 1 s |
+| Text stays | Canvas | `Text Hold` | 2.5 s |
+| Text fade out | Canvas | `Text Fade Out` | 1 s |
+| Picture fade in | Canvas | `Picture Fade In` | 1.5 s |
+| Wait before button | Canvas | `Button Delay` | 1 s |
+| Button fade in | Canvas | `Button Fade In` | 0.5 s |
+
+To check later phases without waiting, the timer is the private `elapsed` field (total about 7.5 s before the button starts).
 
 ## Settings panel (shared)
 
@@ -68,9 +91,9 @@ Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its r
 
 ## Pause
 
-`PauseMenu` is on the `PF_HUD` root, so both levels have it. Esc or P toggles it (P too, because browsers use Esc to leave fullscreen). Pausing sets `Time.timeScale` 0 and shows `PF_HUD > PauseScreen` (plum dim, alpha about 60%) with a `PF_SettingsPanel` inside. The panel has two buttons, both 460 wide here (Back is 360 in the main menu). `Back` resumes (same as Esc/P again). `Save and quit` exists only here: a `QuitButton` added to the `PF_SettingsPanel` instance inside `PF_HUD`, with `ButtonPop > After Pop` = `PauseMenu.SaveAndQuit`. The main menu's panel does not have it. `SaveAndQuit()` writes the current level's scene name to `SavedLevel` and loads `Menu Scene`. Start then begins that level again from its start (Level1 without the intro video); the spot inside the level is not saved. Fields: `Pause Screen`, `Settings Panel` (the panel inside it), `Menu Scene` (default `MainMenu`, must be in `File > Build Profiles`).
+`PauseMenu` is on the `PF_HUD` root, so both levels have it. Esc or P toggles it (P too, because browsers use Esc to leave fullscreen). Pausing sets `Time.timeScale` 0 and shows `PF_HUD > PauseScreen` (plum dim, alpha about 60%) with a `PF_SettingsPanel` inside. The panel has two buttons, both 460 wide here (Back is 360 in the main menu). `Back` resumes (same as Esc/P again). `Save and quit` exists only here: a `QuitButton` added to the `PF_SettingsPanel` instance inside `PF_HUD`, with `ButtonPop > After Pop` = `PauseMenu.SaveAndQuit`. The main menu's panel does not have it. `SaveAndQuit()` writes the current level's scene name to `SavedLevel` and loads `Menu Scene`. Start ignores the save and begins a fresh game, so for now this button just quits to the menu. Fields: `Pause Screen`, `Settings Panel` (the panel inside it), `Menu Scene` (default `MainMenu`, must be in `File > Build Profiles`).
 
-A browser refresh goes to the menu, and Start resumes the saved level. Only `LevelExit` and Save and quit write `SavedLevel`, so closing the tab mid-level keeps the last save.
+A browser refresh goes to the menu, and Start begins a fresh game.
 
 - `PlayerControl`, `CowRam` and `SharedCamera` return early while `Time.timeScale` is 0. `ButtonPop` uses unscaled time, so button squashes still play.
 - `Scribble.shader` uses `_Time`, so the key drawings freeze while paused.
@@ -168,4 +191,10 @@ Swapping the title lettering: put a new sprite on `TitleArt > Title > SpriteRend
 
 ## Home screen scene
 
-Copied from MainMenu and stripped. Camera solid cream #FBEBD6. Canvas (Overlay, 1920x1080, `HomeScreen` script). `Title` "You're home." (plum #2E1A2B, 120), `Subtitle` "The calf is back with the herd." (plum, 56), `Buttons > BackButton` "Back to menu" (plum button, peach text) with OnClick = `HomeScreen.BackToMenu`. Layout is anchors (title and subtitle at 62% height) and the Buttons Vertical Layout Group. Level2's exit (`LevelExit > Next Scene` = "HomeScreen") loads it; it also writes `SavedLevel` = HomeScreen, so Start ignores that save and begins again at the Intro.
+Copied from MainMenu and stripped. Camera solid white (continues Level2's white fade). Canvas (Overlay, 1920x1080, `HomeScreen` script), children bottom to top:
+
+- `EndPicture`: Image with the end sprite, stretched anchors, Preserve Aspect on, Raycast Target off, CanvasGroup alpha 0. `end.png` import Max Size 2048 (WebGL).
+- `Text`: stretched, CanvasGroup alpha 0. Holds `Title` "You're home." (plum #2E1A2B, 120) and `Subtitle` "The herd was waiting." (plum, 56), both in `Kkscribble SDF`, both anchored at 62% height.
+- `Buttons`: CanvasGroup alpha 0, not interactable. `BackButton` "Back to menu" (plum button, peach text), OnClick = `HomeScreen.BackToMenu`, Vertical Layout Group anchored at 21% height (middle of the grass band, below the herd in the end picture).
+
+Level2's exit (`LevelExit > Next Scene` = "HomeScreen") loads it; it also writes `SavedLevel` = HomeScreen, which Start clears.

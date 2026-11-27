@@ -16,12 +16,13 @@ Two animals on one keyboard. The cow (WASD) walks. The crow (arrow keys) flies f
 Everything happens in `Update`, in this order:
 
 1. Read the keyboard (`Keyboard.current`). Cow `Controls` = WASD: W up, S down, A left, D right. Arrows: the four arrow keys. `x` and `y` are each -1, 0 or 1. Opposite keys cancel to 0. If there is no keyboard, input is 0.
-2. `moving` = any key held. While moving, `lastDir` (public, hidden) = `(x, y)`. `CowRam` aims with it.
+2. `moving` = any key held. While moving, `lastDir` (public, hidden) = `(x, y)`. `CowRam` aims with it. If `aimOnly` (public, hidden, set by `CowRam` while charging) is on, the facing sprite is applied and `Update` returns here: no walk, no velocity.
 3. Pick the facing sprite: right if x > 0, left if x < 0, otherwise back if y > 0, front if y < 0. Left/right wins on diagonals. If nothing is pressed, keep the last facing.
 4. Pick the shown sprite. Flying (moving and `Fly` is set): `Fly`. Otherwise, moving right with `Walk Right` frames: cycle them, frame = `(int)(Time.time * Walk Fps) % length`. Same for left with `Walk Left`. With no left/right input: up uses `Walk Up`, down uses `Walk Down`. Otherwise the last facing sprite. Standing still always shows the facing sprite. Show `Fly Shadow` only while moving (if set); at the same time hide `Ground Shadow` (if set).
 5. If flying, the object snaps (no smooth turn) to one of four headings: right 0°, left 180°, up 90°, down -90°, picked like the facing sprite (left/right wins on diagonals), plus `Fly Angle` as an offset: `fly.png` has its head at the bottom, so 90. Tired and moving: it sways by `Waddle Angle` at `Waddle Speed`. Otherwise it is upright.
 6. If `Fly Shadow` is set, keep it at its starting offset from the object in world space (straight below, not swung round by the spin), but give it the crow's rotation, so its long side follows the wings (wings are horizontal flying up/down, vertical flying left/right).
-7. Set the Rigidbody2D's `linearVelocity` to `(x, y) * Mov Speed * speedScale`. `speedScale` (public, hidden, default 1) is set by `CrowEnergy`.
+7. If `Fly Particles` is set, its emission is on only while flying (moving, not tired).
+8. Set the Rigidbody2D's `linearVelocity` to `(x, y) * Mov Speed * speedScale`. `speedScale` (public, hidden, default 1) is set by `CrowEnergy`.
 
 `Start` caches the Rigidbody2D and SpriteRenderer, remembers the starting sprite as the facing, and records the shadow's offset from the object and sets its scale so it measures `Fly Shadow Size` in the world (sprite and parent scale are divided out).
 
@@ -33,11 +34,14 @@ Juice (all in `CowRam`, strength scales with the charge): while dashing the cow 
 
 `CowRam` on the cow. Hold Space (`Ram Key`) to charge, release to dash. Order of events:
 
-1. Space pressed: `PlayerControl` is disabled (it would overwrite the velocity every frame), velocity set to zero, charge = 0.
-2. Held: charge rises 0 to 1 over `Charge Time`. The cow squashes: Y scale lerps toward `Squash`, X grows by `(1 - Squash) * charge`.
-3. Released: scale restored, dash starts for `Dash Time` seconds at `lastDir.normalized * Dash Speed * charge`. The charge is remembered as the dash charge.
+1. Space pressed: charge = 0, velocity zero, `PlayerControl.aimOnly` = true. `PlayerControl` stays on but only reads keys: WASD still updates `lastDir` (8-way) and the facing sprite, and sets no velocity, so the cow stands still and can re-aim while charging.
+2. Held: charge rises 0 to 1 over `Charge Time`. The cow squashes: Y scale lerps toward `Squash`, X grows by `(1 - Squash) * charge`. The frame the charge crosses `Min Charge` (once per charge) is the ready cue: the cow tints toward `Ready Flash Color`, fading over `Ready Flash Time`.
+   Aim lock: each frame the nearest live snake (not null, active, revealed and not dying; `Snake.CanBeLocked`) within `Aim Range` of the cow and within `Aim Angle` of `lastDir` gets a crosshair (`Crosshair Prefab` instance, created in `Start`, hidden when there is no target). It is `Crosshair Color` below `Min Charge` and `Crosshair Ready Color` at `Crosshair Ready Scale` size above it, and spins at `Crosshair Spin`. Snakes are cached in `Start` (`FindObjectsByType<Snake>`), so snakes spawned later or inactive then are not locked.
+3. Released: scale and tint restored, crosshair hidden. If a snake is locked, `lastDir` is set to the direction to it (so the dash, `AlongScale` and the tree check all agree). `aimOnly` goes off and `PlayerControl` is disabled for the dash. Dash lasts `Dash Time` seconds at `lastDir.normalized * Dash Speed * charge`. The charge is remembered as the dash charge.
 4. Dash hits anything (`OnCollisionEnter2D`): if the dash charge is at least `Min Charge` and the thing has a `FruitTree`, the cow calls its `Hit()`. Any new hit ends the dash. A trunk the cow was already touching when it started charging also counts (`OnCollisionStay2D`), but only if the cow is dashing toward it, so backing off a tree drops nothing.
 5. Dash ends (timer or hit): velocity zero, `PlayerControl` enabled again.
+
+Crosshair prefab: `Assets/Prefabs/PF_AimCrosshair` (SpriteRenderer, `Assets/Sprites/SPR_AimRing.png` white ring with 4 ticks, 256 px at 256 pixels per unit, scale 1.2, default sprite material, Order in Layer 18: above snakes 14 and animals, below fog 19 so it never shows a snake hidden by fog). The colour comes from CowRam. Set in Level1 and Level2 on `Cow > CowRam > Crosshair Prefab`.
 
 The cow calls the tree, not the other way round, so there is no collision-callback order to worry about. See `trees.md`.
 
@@ -75,6 +79,11 @@ On the `PlayerControl` component of each object.
 | Ram key | Cow | CowRam > Ram Key | not set up yet (default Space) |
 | Ram juice | Cow | CowRam > Cam | Main Camera |
 | Ram juice | Cow | CowRam > Dash Stretch / Hit Squash / Hop Time / Hop Speed / Hit Shake / Weak Shake | 1.2 / 0.7 / 0.15 / 5 / 0.3 / 0.04 |
+| Ready cue | Cow | CowRam > Ready Flash Color / Ready Flash Time | (1, 0.95, 0.85) / 0.12 |
+| Snake kill shake | Cow | CowRam > Snake Shake | 0.35 |
+| Aim lock | Cow | CowRam > Crosshair Prefab / Aim Range / Aim Angle | PF_AimCrosshair / 4 / 35 |
+| Crosshair look | Cow | CowRam > Crosshair Color / Crosshair Ready Color / Crosshair Ready Scale / Crosshair Spin | gold E8B23A at 60% / (1, 0.95, 0.75) / 1.3 / 90 |
+| Fly particles (optional) | Crow | PlayerControl > Fly Particles | `Crow > FlySpecks` (see `particles.md`) |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |
 | Energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 (tired scale 0.07) |
@@ -96,7 +105,7 @@ On the `PlayerControl` component of each object.
 - The `Shadow` child spins with the crow (it is a child), so while flying it swung to the side of the sprite. `Ground Shadow` hides it during flight and the unrotated `Fly Shadow` takes over. `FlyShadow` had scale (0, -1, 0), so it was invisible; its size now comes from `Fly Shadow Size`.
 - `Fly` and `Fly Shadow` are both optional and independent. If `Fly` is empty but `Fly Shadow` is set, the shadow still shows while moving but the object doesn't rotate.
 - The sprite for the cow facing and the crow facing are set per-object through the Inspector; no assets are looked up by name.
-- `PlayerControl` is disabled during the cow's charge and dash, so WASD does nothing then, and the walk sprites stop updating.
+- `PlayerControl` is aim-only during the cow's charge (WASD turns the aim and facing sprite, no walking) and disabled during the dash and hop, so WASD does nothing then and the walk sprites stop updating.
 - The crow needs a trigger Circle Collider 2D (Is Trigger on) to eat fruit. It has no collider otherwise, and a non-trigger one would make it collide with things.
 - The fly sprite still shows while the crow is tired; only its speed drops.
 - Both animals share one script and one `Controls` enum. Click the Game view before testing, or the keyboard won't register.

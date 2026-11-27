@@ -47,6 +47,7 @@ Unity 6 / Input System 1.20 API (use these, not the old names):
 - `Rigidbody2D.linearVelocity`, not `velocity`.
 - `linearDamping` / `angularDamping`, not `drag` / `angularDrag`.
 - `FindFirstObjectByType` / `FindObjectsByType`, not `FindObjectOfType`.
+- Unity 6.6: `FindObjectsByType<T>()` with no `FindObjectsSortMode` argument (that overload is obsolete).
 - New Input System only: `Keyboard.current` or an `InputAction`. Never `UnityEngine.Input`.
 - TextMeshPro: `using TMPro;` (comes with the uGUI package).
 - Check the installed package version in `Packages/manifest.json` before using its API.

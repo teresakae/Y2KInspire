@@ -50,7 +50,7 @@ The root stays active so it can wait. The `Sign` is off until the tip opens.
 6. `Show Count` (default 1): how many different targets get a sign before the tip is finished. After each close the tip goes back to waiting (words, key and tilt reset) until `Show Count` signs have shown; each target gets at most one. The id is added to the seen list only after the last one.
 7. `Hit(Transform)`: if the sign is open on that target, it swaps the `Label` text to `Hit Text` (if set) and closes with a hit animation: sign shakes (`Hit Shake`, `Hit Shake Speed`), punches (`Hit Pop` curve over `Hit Time`), and the key slams down (`Key Slam`) then springs back. A hit on any other transform is ignored.
 
-Seen list: a static list of tip ids, per play session. Closing a tip adds its id. A death reload does not replay finished tips. A browser refresh does (the list is empty again). A tip still open when you die shows again. It is reset at play start, so the editor's skipped domain reload doesn't keep it.
+Seen list: a static list of tip ids, per play session. Closing a tip adds its id. A death reload does not replay finished tips. A browser refresh does (the list is empty again), and so does the menu's Start (`MainMenu.StartGame` calls `TutorialTip.ForgetAll`). A tip still open when you die shows again. It is reset at play start, so the editor's skipped domain reload doesn't keep it.
 
 Level1 only: FruitTree `On Drop` is wired to `Tip_Tree.Done`, so the tree sign closes when a fruit falls. (`Tip_Fruit` and `TutorialTip.SetTarget`, which pointed a sign at the fallen fruit, were removed.)
 

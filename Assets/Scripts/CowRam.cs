@@ -38,25 +38,71 @@ public class CowRam : MonoBehaviour
     [SerializeField] private float hitShake = 0.3f;
     [Tooltip("Camera shake (units) for a weak dash into a tree.")]
     [SerializeField] private float weakShake = 0.04f;
+    [Tooltip("Camera shake (units) when the dash kills a snake.")]
+    [SerializeField] private float snakeShake = 0.35f;
+
+    [Header("Ready cue")]
+    [Tooltip("Cow tint at the instant the charge reaches Min Charge.")]
+    [SerializeField] private Color readyFlashColor = new Color(1f, 0.95f, 0.85f);
+    [Tooltip("Seconds the ready flash takes to fade.")]
+    [SerializeField] private float readyFlashTime = 0.12f;
+
+    [Header("Aim lock")]
+    [Tooltip("Crosshair shown on the locked snake (a prefab). Empty = no crosshair, but the lock still works.")]
+    [SerializeField] private GameObject crosshairPrefab;
+    [Tooltip("A snake this close can be locked (units). A full dash covers Dash Speed x Dash Time = 3, plus a margin.")]
+    [SerializeField] private float aimRange = 4f;
+    [Tooltip("A snake within this many degrees of the aim direction can be locked.")]
+    [Range(5f, 90f)]
+    [SerializeField] private float aimAngle = 35f;
+    [Tooltip("Crosshair tint while the charge is still below Min Charge.")]
+    [SerializeField] private Color crosshairColor = new Color(0.91f, 0.70f, 0.23f, 0.6f);
+    [Tooltip("Crosshair tint once the dash would kill.")]
+    [SerializeField] private Color crosshairReadyColor = new Color(1f, 0.95f, 0.75f, 1f);
+    [Tooltip("Crosshair size multiplier once ready (1 = same size).")]
+    [SerializeField] private float crosshairReadyScale = 1.3f;
+    [Tooltip("Crosshair spin (degrees per second).")]
+    [SerializeField] private float crosshairSpin = 90f;
 
     PlayerControl player;
     Rigidbody2D rb;
+    SpriteRenderer sr;
     Vector3 baseScale;
-    bool charging, dashing, hopping;
-    float charge, dashCharge, timer;
+    Color baseColor;
+    bool charging, dashing, hopping, ready;
+    float charge, dashCharge, timer, popTimer;
+    Snake[] snakes;
+    GameObject crosshair;
+    SpriteRenderer crosshairSr;
+    Vector3 crosshairBaseScale;
 
     void Awake()
     {
         player = GetComponent<PlayerControl>();
         rb = GetComponent<Rigidbody2D>();
+        sr = GetComponent<SpriteRenderer>();
         baseScale = transform.localScale;
+        baseColor = sr.color;
         if (cam == null) Debug.LogError($"{name}: missing Cam");
     }
 
-    // Whatever interrupts the cow (scene change, disabled) must not leave it squashed.
+    void Start()
+    {
+        snakes = FindObjectsByType<Snake>();
+        if (crosshairPrefab == null) return;
+        crosshair = Instantiate(crosshairPrefab);
+        crosshair.SetActive(false);
+        crosshairSr = crosshair.GetComponent<SpriteRenderer>();
+        crosshairBaseScale = crosshair.transform.localScale;
+    }
+
+    // Whatever interrupts the cow (scene change, disabled) must not leave it squashed or tinted.
     void OnDisable()
     {
         transform.localScale = baseScale;
+        if (sr != null) sr.color = baseColor;
+        if (player != null) player.aimOnly = false;
+        if (crosshair != null) crosshair.SetActive(false);
     }
 
     void Update()
@@ -83,10 +129,11 @@ public class CowRam : MonoBehaviour
 
         if (!charging && kb[ramKey].wasPressedThisFrame)
         {
-            // PlayerControl overwrites velocity every frame, so switch it off while we drive.
+            // PlayerControl stays on but aim-only: WASD turns the aim, it sets no velocity.
             charging = true;
+            ready = false;
             charge = 0f;
-            player.enabled = false;
+            player.aimOnly = true;
             rb.linearVelocity = Vector2.zero;
         }
 
@@ -95,12 +142,32 @@ public class CowRam : MonoBehaviour
         if (kb[ramKey].isPressed)
         {
             charge = Mathf.Clamp01(charge + Time.deltaTime / chargeTime);
-            transform.localScale = Vector3.Scale(baseScale, new Vector3(1 + (1 - squash) * charge, Mathf.Lerp(1, squash, charge), 1));
+            if (!ready && charge >= minCharge)
+            {
+                ready = true;   // once per charge
+                popTimer = readyFlashTime;
+            }
+            popTimer -= Time.deltaTime;
+            float pop = Mathf.Clamp01(popTimer / readyFlashTime);
+            sr.color = Color.Lerp(baseColor, readyFlashColor, pop);
+            Vector3 squashed = new Vector3(1 + (1 - squash) * charge, Mathf.Lerp(1, squash, charge), 1);
+            transform.localScale = Vector3.Scale(baseScale, squashed);
+            ShowCrosshair(FindTarget());
         }
         else
         {
+            Transform target = FindTarget();
+            if (target != null)
+            {
+                // Soft lock: dash at the snake, not along the 8-way aim. lastDir follows so AlongScale and TryHitTree agree.
+                player.lastDir = ((Vector2)target.position - (Vector2)transform.position).normalized;
+            }
+            if (crosshair != null) crosshair.SetActive(false);
+            sr.color = baseColor;
             transform.localScale = baseScale;
             charging = false;
+            player.aimOnly = false;
+            player.enabled = false;   // PlayerControl overwrites velocity every frame, so it stays off while we drive
             dashing = true;
             timer = dashTime;
             dashCharge = charge;
@@ -109,8 +176,43 @@ public class CowRam : MonoBehaviour
         }
     }
 
+    // Nearest live snake inside Aim Range and within Aim Angle of the aim direction, or null.
+    Transform FindTarget()
+    {
+        Transform best = null;
+        float bestDist = aimRange;
+        foreach (Snake s in snakes)
+        {
+            if (s == null || !s.gameObject.activeInHierarchy || !s.CanBeLocked) continue;
+            Vector2 to = s.transform.position - transform.position;
+            if (to.magnitude > bestDist || Vector2.Angle(player.lastDir, to) > aimAngle) continue;
+            best = s.transform;
+            bestDist = to.magnitude;
+        }
+        return best;
+    }
+
+    // Crosshair sits on the target; bigger and brighter once the dash would kill. null hides it.
+    void ShowCrosshair(Transform target)
+    {
+        if (crosshair == null) return;
+        crosshair.SetActive(target != null);
+        if (target == null) return;
+        crosshair.transform.position = target.position;
+        crosshair.transform.Rotate(0f, 0f, crosshairSpin * Time.deltaTime);
+        crosshair.transform.localScale = crosshairBaseScale * (ready ? crosshairReadyScale : 1f);
+        crosshairSr.color = ready ? crosshairReadyColor : crosshairColor;
+    }
+
     // Snakes check this: only a dash charged past Min Charge kills them.
     public bool IsStrongDash => dashing && dashCharge >= minCharge;
+
+    // Called by the snake it kills: same thump as a strong tree hit, so the kill lands.
+    public void HitSnake()
+    {
+        if (cam != null) cam.Shake(snakeShake);
+        StartHop();
+    }
 
     // Scale that is `along` times longer on the dash axis (x or y, whichever the cow faces) and the
     // opposite way on the other axis, so the volume stays about the same.

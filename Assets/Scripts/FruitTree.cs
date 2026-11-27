@@ -22,6 +22,8 @@ public class FruitTree : MonoBehaviour
     [SerializeField] private float shakeSpeed = 40f;
     [Tooltip("Seconds after a hanging fruit is picked before it grows back on the canopy. 0 = never.")]
     [SerializeField] private float regrowTime = 20f;
+    [Tooltip("Optional. Leaves that flutter down from the canopy on every ram (PF_LeafBurst, child of the tree). Empty = none.")]
+    [SerializeField] private ParticleSystem leafBurst;
 
     [Tooltip("Runs when a fruit drops. Passes the fallen fruit. Used by tutorial tips.")]
     [SerializeField] private UnityEvent<Transform> onDrop;
@@ -45,6 +47,7 @@ public class FruitTree : MonoBehaviour
         if (Time.time < nextHit) return;
         nextHit = Time.time + cooldown;
         shakeTimer = shakeTime;
+        if (leafBurst != null) leafBurst.Play();
         if (fruitPrefab == null) return;
         GameObject f = TakeHangingFruit();
         if (f == null) return;   // empty tree still shakes, drops nothing

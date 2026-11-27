@@ -16,7 +16,8 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 1. The cow dashes into the tree's collider. `CowRam` checks its charge and calls `FruitTree.Hit(charge)`.
 2. `Hit()` is ignored if `Cooldown` hasn't passed since the last hit (stops one dash dropping many). Otherwise it starts a canopy shake. Each counting ram hides the next active hanging fruit and spawns `Fruit Prefab` at that exact spot. The fruit falls straight down (`Fruit > Gravity` 30) to `Drop Below` under the tree's pivot (the trunk centre, so in front of the trunk's base), bounces once (`Fruit > Bounce` 0.15), then lands. While falling it draws at `Fruit > Falling Order` 20 (over the canopy) with its collider off, so the crow can't eat it mid-air; on landing it goes back to its prefab order (13), turns the collider on and swaps to `Fruit > Landed Sprite` (`fruit_cut`), so a whole fruit falls and a split one lies on the ground. When all are hidden the tree only shakes and drops nothing. A hidden hanging fruit grows back on the canopy `Regrow Time` seconds after it was picked (`FruitTree.Update` checks a due time per fruit).
-3. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
+3. Every counting ram also plays `Leaf Burst` if it is set, even on an empty tree: 4 to 6 leaves (`Assets/Prefabs/PF_LeafBurst`, one child `LeafBurst` per fruit tree, placed at the canopy centre) appear anywhere inside the canopy and fall, fluttering and spinning, fading over 1.8 to 2.6 s. Half are drawn in front of the canopy (`LeafBurst`, order 18), half behind it (child `Back`, order 16, so they only show once they drop below the canopy edge). See `particles.md`.
+4. The shake moves `Shake Target` sideways with a sine wave for `Shake Time` seconds, then puts it back. With no target set it shakes the whole tree.
 3b. If `Fruit > Lifetime` is above 0, a timer starts once the fruit is on the ground (after landing if it fell, from the first frame if placed on the ground). Over the last `Fade Time` seconds its sprite alpha drops to 0, then it is destroyed. 0 = stays forever.
 4. The crow touches the fruit's trigger: `Fruit` calls `CrowEnergy.Eat(Energy)` and destroys itself. The cow's touch is ignored.
 
@@ -53,7 +54,8 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 | Runs when a fruit drops | Tree | FruitTree > On Drop | UnityEvent passing the fallen fruit's Transform. Level1 only wires it to the tutorial tips (`TutorialTip.Done`), see `tutorial.md` |
 | Hanging fruit regrow | Tree | FruitTree > Regrow Time | 20 seconds (default, all trees including PF_Fruit and PF_FruitQuick ones; 0 = never) |
 | Canopy to shake | Tree | FruitTree > Shake Target | Canopy |
-| Trunk collider | Tree | BoxCollider2D > Size / Offset | (2.2, 0.6) / (0.03, 0.3) |
+| Leaves on a ram (empty = none) | Tree | FruitTree > Leaf Burst | the tree's `LeafBurst` child (all 5 fruit trees) |
+| Trunk collider | Tree | BoxCollider2D > Size / Offset | (2.2, 1.7) / (0.03, 0.135), trunk only, top below the canopy's lower edge |
 | Shake size, length, speed | Tree | FruitTree > Shake Amount / Shake Time / Shake Speed | 0.1 / 0.2 / 40 (defaults) |
 | Energy per fruit | PF_Fruit | Fruit > Energy | 30 (default) |
 | Seconds on ground before it fades | PF_Fruit | Fruit > Lifetime | 0 (default = stays forever) |
@@ -65,7 +67,7 @@ Fruit trees stand in the forest. When the cow charges into one with a strong eno
 
 - The cow calls `Hit()`; the tree never checks for the cow. This avoids collision-callback order problems.
 - The tree's collider must be on the same object as `FruitTree` (the root), because `CowRam` looks for the component on the thing it hit.
-- Put the collider on the trunk base only. A canopy collider would stop the cow far from the trunk.
+- Put the collider on the trunk base only. A canopy collider stops the cow far from the trunk and closes paths: a 4.59-tall box left a 0.5 gap under Level2's top wall, and the cow needs 0.8 (fixed 27 Nov 2026).
 - The crow needs a trigger Circle Collider 2D, or fruit never gets eaten.
 - Trunks (5) draw under the fog (10), so a trunk in fog is hidden and only its canopy shows. Canopies (17) draw above the animals (15, 16), so the crow is hidden when it flies over a canopy. Hanging fruit must stay above the canopy (18).
 - If `Fruit Prefab` is empty, the tree logs an error and drops nothing, but still shakes.

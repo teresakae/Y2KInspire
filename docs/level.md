@@ -40,7 +40,7 @@ Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `H
 
 `MooBubble` lives inside `PF_HUD`, so both levels get it. Per scene only `Target` is overridden (`Exit`); the rest comes from the prefab. Hierarchy: `HUD > MooBubble` [RectTransform 230 x 116, CanvasGroup, MooPrompt] with children in this order: `Tail` (behind), `Body`, `Text` (TMP "moo!", `Kkscribble SDF` 64, plum). `Tail` and `Body` are both `cow and crow ui_6` (9-sliced, 50 px borders). The bubble sits before `Fade` in sibling order so the white fade covers it. Anchors and pivot are centred (the script sets the screen position directly).
 
-`LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" for the menu's Continue button (see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
+`LevelExit`: needs both the `Cow` and `Crow` colliders inside the trigger (it tracks each with an in/out flag). The crow's collider must be the trigger CircleCollider2D. A trigger-vs-trigger overlap reports in 2D when one of the two has a Rigidbody2D; the crow has one. The Exit's layer must collide with the Crow layer in the matrix. When leaving starts and `Next Scene` is not empty, it writes `PlayerPrefs` "SavedLevel" (Start clears it; kept for a later Continue button, see `menu.md`). Only the Image's alpha changes, its RGB stays as set in the Inspector.
 
 ## Scene setup
 
@@ -147,7 +147,7 @@ Layout (world coordinates):
 | Meeting clearing | (21.8, -17.8), round meadow 7.1 across | `Ground > Meadow_Meeting`, `Tree_Meeting` in the middle, centred in the junction of the west, east and south paths |
 | Pond | blob about 9.2 x 9.4 at (19.5, -8.3) | `Ground > Pond` (collider), `Ground > PondWater` (art) |
 | Island | (19.5, -8.3), about 3.3 across | `Ground > Island`, `Fruit_Island` (PF_Fruit, lifetime 0) |
-| Exit | (44.5, -29), trigger 8 x 1.4 on the bottom edge | `Exit` |
+| Exit | (43.2, -28.6), trigger 4.4 x 1.8 on the open ground of the bottom-right clearing (x 41 to 45.4, y -29.5 to -27.7); the trees beside it don't count. Keep it above y -29.5: the camera stops at y -24 (`SharedCamera > Min Position`), so the players can't go lower and anything below -30 is off screen. Was 8 x 1.4 at (44.5, -29) until 27 Nov 2026; a try at (44.9, -31.6) sat off screen and could never fire | `Exit` |
 | River | one piece over the whole map, 65 x 40.3 at (18.5, -13.85) | `Ground > River` |
 
 Paths are plain dark ground, like Level1: meadow only at the clearings, the tree lines show the way. Each path centreline is a chain of curves through waypoints (in the placement script); every path is 7 units wide between tree trunks (the cow is 1.6 x 0.8). There is no home clearing: the final path leaves the screen and the exit sits on the edge.
@@ -166,7 +166,7 @@ Trees (`Walls`, 76 `WallTree` instances, scale 1): each tree's collider is a cir
 5. A flood fill from the start finds any gap where the cow could leave the paths and puts a tree in it (`Tree_Patch*`). `Tree_PondSeal0` closes the one gap between the pond's east shore and the long branch's inner trees.
 Fruit trees are never part of a wall: each stands in the middle of its own clearing, with room to walk round it.
 
-Fruit trees (`FruitTrees`): `Tree_Fork` PF_Fruit, cooldown 6; `Tree_FruitA`, `Tree_FruitB` PF_FruitQuick (`Fruit > Lifetime` 8), cooldown 0.5; `Tree_Meeting` PF_Fruit, cooldown 0.5. Each tree's position is its clearing centre minus (0, 1.58), which centres its box collider.
+Fruit trees (`FruitTrees`): `Tree_Fork` PF_Fruit, cooldown 6; `Tree_FruitA`, `Tree_FruitB` PF_FruitQuick (`Fruit > Lifetime` 8), cooldown 0.5; `Tree_Meeting` PF_Fruit, cooldown 0.5. Each tree's position is its clearing centre minus (0, 1.58). Trunk collider 2.2 x 1.7 at offset (0.03, 0.135), trunk only (see `trees.md`): the old 2.2 x 4.59 box reached up into the canopy and left `Tree_FruitA` a 0.5 gap under the top wall, too narrow for the cow's 0.8-tall feet box.
 
 Snakes (`Snakes`, 16, scale 0.5, `Dead` = `SPR_SnakeDead`, Order in Layer 14 so they draw under the cow 15, crow 16, canopies 17 and fog 19, `Obstacles` = Default + Water): staggered so no straight line down a path misses them. `Short0` (4.8, -10.8), `Short1` (11.8, -11.2), `Short2` (6.6, -14.4), `Short3` (14.6, -14.4), `Short4` (9.6, -13.6) on the short branch; `Long0` (33.6, 0.6), `Long1` (36.0, -14.4), `Long2` (16.8, -0.6), `Long3` (27.9, -14.9) on the long branch; `Final0` (22.4, -22.4), `Final1` (26.4, -25.2), `Final2` (23.6, -27.4), `Final3` (30.0, -27.4), `Final4` (31.7, -25.5), `Final5` (34.8, -27.2), `Final6` (39.2, -25.4) along the final stretch with `Chase Range` 4 and `Chase Speed` 2.1 (cow walks at 3, crow flies at 5). The others have `Chase Range` 0. All are in `Tip_Snake > Targets`. Checked in Play: no snake starts blocked, each has 1 unit of free space around it. `Final4` and `Long3` were nudged from the plan to get that. `Final2`, `Final3`, `Final5` are kept off the map's bottom edge (y -30).
 
@@ -193,6 +193,15 @@ Reshaping by hand: move trees in pairs along a line and keep trunks touching (2.
 
 Not done / check by hand: snake balance is unplayed; energy at 4 per second is a guess; a full walk-through to the exit and the HomeScreen button has not been done in Play mode.
 
+
+## Home marker (both levels)
+
+None. The exit has no marker; the moo is what guides the players there.
+
+Tried and removed on 27 Nov 2026:
+- A gold glow at the exit.
+- An arrow on the ground. It was drawn under the fog, and Level2's exit sits in the fast-regrow fog zone, so the arrow was never seen.
+- A `Tip_Home` sign ("home. / both go in!") over the exit, first with an arrow in its key slot, then text only. Deleted from both scenes. `Assets/Sprites/SPR_HomeArrow.png` is left unused.
 
 ## Depth and clearings (both levels, 23 Nov)
 

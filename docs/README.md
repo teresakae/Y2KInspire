@@ -7,10 +7,11 @@ One file per system. Each describes how that system works right now, where it li
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy and drowning (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`, `Water.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy, water |
 | trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 and Level2 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`, moo bubble in `PF_HUD`) | Level layout, camera, level start or end, layers and collision matrix |
-| menu.md | Main menu: title art with floating motion, start (resumes the save), shared settings panel (fullscreen, volume), credits, saved level and volume; pause (Esc or P); opening video with skip button; home screen button (`MainMenu.cs`, `ButtonPop.cs`, `SettingsPanel.cs`, `PauseMenu.cs`, `TitleFloat.shader`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, settings panel, pause, PlayerPrefs saves, build scene order |
+| menu.md | Main menu: title art with floating motion, start (fresh game), shared settings panel (fullscreen, volume), credits, saved level and volume; pause (Esc or P); opening video with skip button; home screen button (`MainMenu.cs`, `ButtonPop.cs`, `SettingsPanel.cs`, `PauseMenu.cs`, `TitleFloat.shader`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, settings panel, pause, PlayerPrefs saves, build scene order |
 | tutorial.md | Tutorial signs ("fruit. RAM!" etc.) and the wobbly key drawings (`TutorialTip.cs`, `Scribble.shader`, `PF_TutorialTip`) | Tutorial tips, the Tutorial drawings, the Scribble material |
 | grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
+| particles.md | Ambient butterflies, ladybug, crow fly specks (`PF_Butterflies`, `PF_Ladybug`, `PF_FlySpecks`; `PlayerControl > Fly Particles`) | Particles, the particle sheet, anything ambient |
 
 ## Run it
 
@@ -49,8 +50,8 @@ New objects go in the matching group above, and the doc for that group gets a li
 
 Active build profile: `Assets/Settings/Build Profiles/Web.asset`. Product Name "Cow and Crow", Company Name "Y2K", Version 1.0.
 
-1. `File > Build Profiles > Web`, click Build, pick the `CowAndCrow/` folder at the project root. It is gitignored (`/CowAndCrow/`). Output: `index.html`, `Build/` (`CowAndCrow.wasm`, `.data`, `.framework.js`, `.loader.js`), `TemplateData/`.
-2. Zip the contents of `CowAndCrow/`, not the folder itself: `index.html` must sit at the zip root. About 18 MB.
+1. `File > Build Profiles > Web`, click Build, pick the `CowAndCrow/` folder at the project root. It is gitignored (`/CowAndCrow/`). Output: `index.html`, `Build/` (`CowAndCrow.wasm.br`, `.data.br`, `.framework.js.br`, `.loader.js`), `TemplateData/`, `StreamingAssets/`.
+2. Zip the contents of `CowAndCrow/`, not the folder itself: `index.html` must sit at the zip root. About 20 MB.
 3. Upload to https://kkaechi.itch.io/cow-and-crow as an HTML project, tick "This file will be played in the browser". Jam: https://itch.io/jam/gimersia-inspire-2026.
 
 Gotchas:

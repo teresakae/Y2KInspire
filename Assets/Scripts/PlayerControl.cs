@@ -36,11 +36,15 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private float waddleAngle = 8f;
     [Tooltip("Waddle sway speed (radians per second).")]
     [SerializeField] private float waddleSpeed = 12f;
+    [Tooltip("Optional. Emits only while the animal is flying (moving, not tired). Leave empty for none.")]
+    [SerializeField] private ParticleSystem flyParticles;
 
     // Set by CrowEnergy: 1 = normal, lower = tired.
     [HideInInspector] public float speedScale = 1f;
     // Last non-zero input direction. CowRam aims with it.
     [HideInInspector] public Vector2 lastDir = Vector2.down;
+    // Set by CowRam while charging: keys only turn lastDir and the facing sprite, the animal stays put.
+    [HideInInspector] public bool aimOnly;
 
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -80,11 +84,21 @@ public class PlayerControl : MonoBehaviour
         // Face the way we're moving; left/right wins on diagonals. Standing still keeps the last facing.
         Sprite facing = x > 0 ? right : x < 0 ? left : y > 0 ? back : y < 0 ? front : null;
         if (facing != null) lastFacing = facing;
+        if (aimOnly)
+        {
+            sr.sprite = lastFacing;
+            return;
+        }
 
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
         bool tired = speedScale < 1f;
         bool flying = moving && fly != null && !tired;
         Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : y > 0 ? walkUp : y < 0 ? walkDown : null;
+        if (flyParticles != null)
+        {
+            var em = flyParticles.emission;
+            em.enabled = flying;
+        }
         if (flying) sr.sprite = fly;
         else if (walk != null && walk.Length > 0) sr.sprite = walk[(int)(Time.time * walkFps) % walk.Length];
         else sr.sprite = lastFacing;
