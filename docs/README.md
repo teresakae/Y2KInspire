@@ -8,7 +8,7 @@ One file per system. Each describes how that system works right now, where it li
 | trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 and Level2 flow and layout, shared camera, moo text, exit fade, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`, moo bubble in `PF_HUD`) | Level layout, camera, level start or end, layers and collision matrix |
 | menu.md | Main menu: title art with floating motion, start (fresh game), shared settings panel (fullscreen, volume), credits, saved level and volume; pause (Esc or P); opening video with skip button; home screen button (`MainMenu.cs`, `ButtonPop.cs`, `SettingsPanel.cs`, `PauseMenu.cs`, `TitleFloat.shader`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, settings panel, pause, PlayerPrefs saves, build scene order |
-| tutorial.md | Tutorial signs ("fruit. RAM!" etc.) and the wobbly key drawings (`TutorialTip.cs`, `Scribble.shader`, `PF_TutorialTip`) | Tutorial tips, the Tutorial drawings, the Scribble material |
+| tutorial.md | Tutorial signs ("fruit tree. RAM!" etc.) and the wobbly key drawings (`TutorialTip.cs`, `Scribble.shader`, `PF_TutorialTip`) | Tutorial tips, the Tutorial drawings, the Scribble material |
 | grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
 | particles.md | Ambient butterflies, ladybug, crow fly specks (`PF_Butterflies`, `PF_Ladybug`, `PF_FlySpecks`; `PlayerControl > Fly Particles`) | Particles, the particle sheet, anything ambient |
@@ -74,6 +74,10 @@ Web profile (`File > Build Profiles > Web`) settings:
 Art rule: PNGs need width AND height divisible by 4, or Unity silently skips compression (the `title earth` image alone took 24 MB uncompressed). Pad transparent pixels on the top and right so sprite slices stay put. Check with the Inspector preview footer: it should say DXT1 or DXT5, not RGBA32.
 
 Padded on 24 Nov 2026: title earth, title fog, title fog background, title cow, title crow, title cow shadow, cow and crow ui, cow and crow controls, cow and crow_cow, cow and crow trees, cow and crow (2). Re-pad when the artist re-exports.
+
+Padded on 27 Nov 2026: cow and crow ui (re-export), title logo, crosshairs, decor.
+
+Replace or move art only inside Unity (or keep the old `.meta`). Swapping a file in Finder gives it a new GUID and breaks every sprite link; on 27 Nov the UI sheet lost its links this way and was fixed by restoring its old `.meta`.
 
 Removed to shrink the build: packages Timeline, 2D Animation, 2D Aseprite, 2D PSD Importer, 2D Tilemap Extras, 2D SpriteShape, Visual Scripting, 2D Tooling, 2D Tilemap, Version Control (collab-proxy), Tutorial Framework, Rider, FMOD (`Assets/Plugins`); folders `Assets/Welcome` and `TextMesh Pro/Examples & Extras` (its Resources folder shipped in every build).
 

@@ -81,6 +81,8 @@ Gotchas (add a line every time a call fails for a non-obvious reason):
 - `execute_code` blocks delete/trash calls; use `manage_asset` delete for assets that are in git.
 - `manage_camera` screenshot `output_folder` must be inside the project: use `Library/Captures` (not imported, not in git).
 - Scene edits through `execute_code` don't mark the scene dirty, so `SaveOpenScenes()` silently skips them. Call `EditorSceneManager.MarkSceneDirty(scene)` before saving.
+- `execute_code` (CodeDom) fails on obsolete APIs (e.g. `SerializedProperty.objectReferenceInstanceIDValue`), and `Object` is ambiguous: write `UnityEngine.Object`.
+- `manage_camera` screenshot always renders through Main Camera here, so overlay UI is missing; in Play mode it also logs harmless "PlayerLoop called recursively" errors.
 
 ## 8. Project map
 
@@ -94,7 +96,7 @@ Assets/
   Materials/   M_FogSwirl, M_MoteGlow, M_GrassSway, M_Scribble, M_BonkText
   Sprites/     Cow/ and Crow/ (4-direction pngs; crow also fly.png)
   Settings/    URP assets, InputSystem_Actions.inputactions, scene templates
-  Art/         create when first needed: artist source art
+  Art/         artist source art (Cow, Cutscene, Fog, Ground, Particles, Snake, Title, Tree, UI)
   Prefabs/     PF_ prefabs (Fruit, HUD, WallTree, GrassTuft, SettingsPanel, TutorialTip, BonkPop)
   Audio/       create when first needed: sound and music clips
   Sandbox/     create when first needed: experiments, nothing references it

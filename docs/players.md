@@ -36,12 +36,12 @@ Juice (all in `CowRam`, strength scales with the charge): while dashing the cow 
 
 1. Space pressed: charge = 0, velocity zero, `PlayerControl.aimOnly` = true. `PlayerControl` stays on but only reads keys: WASD still updates `lastDir` (8-way) and the facing sprite, and sets no velocity, so the cow stands still and can re-aim while charging.
 2. Held: charge rises 0 to 1 over `Charge Time`. The cow squashes: Y scale lerps toward `Squash`, X grows by `(1 - Squash) * charge`. The frame the charge crosses `Min Charge` (once per charge) is the ready cue: the cow tints toward `Ready Flash Color`, fading over `Ready Flash Time`.
-   Aim lock: each frame the nearest live snake (not null, active, revealed and not dying; `Snake.CanBeLocked`) within `Aim Range` of the cow and within `Aim Angle` of `lastDir` gets a crosshair (`Crosshair Prefab` instance, created in `Start`, hidden when there is no target). It is `Crosshair Color` below `Min Charge` and `Crosshair Ready Color` at `Crosshair Ready Scale` size above it, and spins at `Crosshair Spin`. Snakes are cached in `Start` (`FindObjectsByType<Snake>`), so snakes spawned later or inactive then are not locked.
+   Aim lock: each frame the nearest live snake (not null, active, revealed and not dying; `Snake.CanBeLocked`) within `Aim Range` of the cow and within `Aim Angle` of `lastDir` gets a crosshair (`Crosshair Prefab` instance, created in `Start`, hidden when there is no target). It is `Crosshair Color` below `Min Charge` and `Crosshair Ready Color` at `Crosshair Ready Scale` size above it, and spins at `Crosshair Spin`. At or above `Min Charge` it also swaps to `Crosshair Ready Sprite` (back to the prefab's sprite below it). Empty = keep the prefab sprite. Snakes are cached in `Start` (`FindObjectsByType<Snake>`), so snakes spawned later or inactive then are not locked.
 3. Released: scale and tint restored, crosshair hidden. If a snake is locked, `lastDir` is set to the direction to it (so the dash, `AlongScale` and the tree check all agree). `aimOnly` goes off and `PlayerControl` is disabled for the dash. Dash lasts `Dash Time` seconds at `lastDir.normalized * Dash Speed * charge`. The charge is remembered as the dash charge.
 4. Dash hits anything (`OnCollisionEnter2D`): if the dash charge is at least `Min Charge` and the thing has a `FruitTree`, the cow calls its `Hit()`. Any new hit ends the dash. A trunk the cow was already touching when it started charging also counts (`OnCollisionStay2D`), but only if the cow is dashing toward it, so backing off a tree drops nothing.
 5. Dash ends (timer or hit): velocity zero, `PlayerControl` enabled again.
 
-Crosshair prefab: `Assets/Prefabs/PF_AimCrosshair` (SpriteRenderer, `Assets/Sprites/SPR_AimRing.png` white ring with 4 ticks, 256 px at 256 pixels per unit, scale 1.2, default sprite material, Order in Layer 18: above snakes 14 and animals, below fog 19 so it never shows a snake hidden by fog). The colour comes from CowRam. Set in Level1 and Level2 on `Cow > CowRam > Crosshair Prefab`.
+Crosshair prefab: `Assets/Prefabs/PF_AimCrosshair` (SpriteRenderer, `crosshairs_ring` from `Assets/Art/UI/crosshairs.png`, a ring with 4 ticks, 172 px at 172 pixels per unit = 1 unit, scale 1.2, default sprite material, Order in Layer 18: above snakes 14 and animals, below fog 19 so it never shows a snake hidden by fog). The colour comes from CowRam. Set in Level1 and Level2 on `Cow > CowRam > Crosshair Prefab`.
 
 The cow calls the tree, not the other way round, so there is no collision-callback order to worry about. See `trees.md`.
 
@@ -83,6 +83,7 @@ On the `PlayerControl` component of each object.
 | Snake kill shake | Cow | CowRam > Snake Shake | 0.35 |
 | Aim lock | Cow | CowRam > Crosshair Prefab / Aim Range / Aim Angle | PF_AimCrosshair / 4 / 35 |
 | Crosshair look | Cow | CowRam > Crosshair Color / Crosshair Ready Color / Crosshair Ready Scale / Crosshair Spin | gold E8B23A at 60% / (1, 0.95, 0.75) / 1.3 / 90 |
+| Crosshair ready sprite | Cow | CowRam > Crosshair Ready Sprite | crosshairs_flower |
 | Fly particles (optional) | Crow | PlayerControl > Fly Particles | `Crow > FlySpecks` (see `particles.md`) |
 | Ram charge / dash | Cow | CowRam > Charge Time / Min Charge / Dash Speed / Dash Time / Squash | not set up yet (defaults 0.8 / 0.5 / 12 / 0.25 / 0.8) |
 | Energy | Crow | CrowEnergy > Max Energy / Drain Per Second / Tired Speed Scale / Bar | not set up yet (defaults 100 / 10 / 0.3 / empty) |

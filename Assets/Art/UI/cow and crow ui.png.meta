@@ -399,6 +399,50 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: cow and crow ui_bubble
+      rect:
+        serializedVersion: 2
+        x: 1042
+        y: 519
+        width: 412
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f69d0146d86c54bfcb08ec3325bf979d
+      internalID: 185050928
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: cow and crow ui_tail
+      rect:
+        serializedVersion: 2
+        x: 1214
+        y: 383
+        width: 82
+        height: 97
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 337d4689d21ed43f5bc8337baa6202d6
+      internalID: 849073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -424,6 +468,8 @@ TextureImporter:
       cow and crow ui_7: -8721969404944835580
       cow and crow ui_8: -8377107643727434243
       cow and crow ui_9: 8499584007036167325
+      cow and crow ui_bubble: 185050928
+      cow and crow ui_tail: 849073
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

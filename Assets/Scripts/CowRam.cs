@@ -59,6 +59,8 @@ public class CowRam : MonoBehaviour
     [SerializeField] private Color crosshairColor = new Color(0.91f, 0.70f, 0.23f, 0.6f);
     [Tooltip("Crosshair tint once the dash would kill.")]
     [SerializeField] private Color crosshairReadyColor = new Color(1f, 0.95f, 0.75f, 1f);
+    [Tooltip("Crosshair sprite once the dash would kill. Empty = keep the prefab's sprite.")]
+    [SerializeField] private Sprite crosshairReadySprite;
     [Tooltip("Crosshair size multiplier once ready (1 = same size).")]
     [SerializeField] private float crosshairReadyScale = 1.3f;
     [Tooltip("Crosshair spin (degrees per second).")]
@@ -75,6 +77,7 @@ public class CowRam : MonoBehaviour
     GameObject crosshair;
     SpriteRenderer crosshairSr;
     Vector3 crosshairBaseScale;
+    Sprite crosshairNormalSprite;
 
     void Awake()
     {
@@ -94,6 +97,7 @@ public class CowRam : MonoBehaviour
         crosshair.SetActive(false);
         crosshairSr = crosshair.GetComponent<SpriteRenderer>();
         crosshairBaseScale = crosshair.transform.localScale;
+        crosshairNormalSprite = crosshairSr.sprite;
     }
 
     // Whatever interrupts the cow (scene change, disabled) must not leave it squashed or tinted.
@@ -202,6 +206,7 @@ public class CowRam : MonoBehaviour
         crosshair.transform.Rotate(0f, 0f, crosshairSpin * Time.deltaTime);
         crosshair.transform.localScale = crosshairBaseScale * (ready ? crosshairReadyScale : 1f);
         crosshairSr.color = ready ? crosshairReadyColor : crosshairColor;
+        crosshairSr.sprite = (ready && crosshairReadySprite != null) ? crosshairReadySprite : crosshairNormalSprite;
     }
 
     // Snakes check this: only a dash charged past Min Charge kills them.

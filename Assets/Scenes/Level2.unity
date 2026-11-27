@@ -39864,6 +39864,7 @@ MonoBehaviour:
   aimAngle: 35
   crosshairColor: {r: 0.91, g: 0.7, b: 0.23, a: 0.6}
   crosshairReadyColor: {r: 1, g: 0.95, b: 0.75, a: 1}
+  crosshairReadySprite: {fileID: 933102133, guid: 493ddff3bd6584b3f944fa97d397fba8, type: 3}
   crosshairReadyScale: 1.3
   crosshairSpin: 90
 --- !u!1001 &1479646155

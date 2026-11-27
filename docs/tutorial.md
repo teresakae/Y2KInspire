@@ -4,13 +4,13 @@ Status: built in both levels. Not play-tested by anyone but the owner.
 
 ## What it is
 
-Hand-drawn key pictures and small signs teach the controls in the moment. Level1 has three drawings in the world at the start (cow keys, crow keys, space key). Signs ("the herd is calling. / follow it!", "fruit. RAM!", "fruit. crow hungry", "danger. RAM!", "water. crow scout!") pop up over the thing they are about once players can see it, then close when the player does it or walks away. Everything wobbles like a boiling pencil line.
+Hand-drawn key pictures and small signs teach the controls in the moment. Level1 has three drawings in the world at the start (cow keys, crow keys, space key). Signs ("the herd is calling. / follow it!", "fruit tree. RAM!", "danger. RAM!", "water. crow scout!") pop up over the thing they are about once players can see it, then close when the player does it or walks away. Everything wobbles like a boiling pencil line.
 
 ## Where it lives
 
 - Scripts: `Assets/Scripts/TutorialTip.cs`. Shader: `Assets/Shaders/Scribble.shader` (`Cowncrow/Scribble`). Material: `Assets/Materials/M_Scribble.mat`.
 - Prefab: `Assets/Prefabs/PF_TutorialTip.prefab`.
-- Art: `Assets/Art/Title/cow and crow controls.png` (slices `controls_cow`, `controls_crow`, `controls_space`) and `cow and crow ui.png` (slice `cow and crow ui_6`, the sign background, 50 px 9-slice borders). Font: `Kkscribble SDF`.
+- Art: `Assets/Art/Title/cow and crow controls.png` (slices `controls_cow`, `controls_crow`, `controls_space`) and `Assets/Art/UI/cow and crow ui.png` (slice `cow and crow ui_6`, the sign background, 50 px 9-slice borders). Font: `Kkscribble SDF`.
 - Scene objects: Level1 `Tutorial` (3 SpriteRenderers) and `TutorialTips`; Level2 `TutorialTips` (only `Tip_Snake` and `Tip_Water`).
 
 ## Scribble material
@@ -63,7 +63,7 @@ Level1 `TutorialTips`:
 | Tip | Sign text | Target | Key | Offset | Closes when |
 |---|---|---|---|---|---|
 | `Tip_Herd` (id `herd`) | the herd is calling. / follow it! (two lines) | `Cow` (no fog check; the sign sits above the calf and follows it) | none | (0, 3.5) | `Max Time` 6, long enough to overlap the next moo bubble (one every 6 s). No `Mover`. `Show Delay` 1.6 |
-| `Tip_Tree` | fruit. RAM! | the fruit tree | Space | (0, 5.3) | a fruit drops (On Drop) |
+| `Tip_Tree` | fruit tree. RAM! | the fruit tree | Space | (0, 5.3) | a fruit drops (On Drop) |
 
 Level2 `TutorialTips` (no tree or fruit tips; those exist in Level1 only):
 

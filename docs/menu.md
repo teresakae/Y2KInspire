@@ -11,7 +11,7 @@ The first screen: a painted title picture with a column of buttons on the left. 
 - Scripts: `Assets/Scripts/MainMenu.cs` (on the Canvas), `Assets/Scripts/ButtonPop.cs` (on every button), `Assets/Scripts/SettingsPanel.cs` (on the settings panel prefab), `Assets/Scripts/PauseMenu.cs` (on `PF_HUD`).
 - Prefab: `Assets/Prefabs/PF_SettingsPanel.prefab`, used in MainMenu and in `PF_HUD > PauseScreen`.
 - Shader: `Assets/Shaders/TitleFloat.shader`. One material per art layer in `Assets/Materials/M_Title*.mat`.
-- Art: `Assets/Art/Title` (layers, button sheet `cow and crow ui.png`, font `Kkscribble-Regular.ttf`, TMP font `Kkscribble SDF.asset`).
+- Art: `Assets/Art/Title` (layers, title logo, font `Kkscribble-Regular.ttf`, TMP font `Kkscribble SDF.asset`). Button sheet: `Assets/Art/UI/cow and crow ui.png`.
 - Post-processing: `Assets/Settings/VP_Title.asset`, on `Global Volume` in the scene.
 - Scene: `Assets/Scenes/MainMenu.unity`. Must be build index 0 (order: MainMenu, Intro, Level1, Level2, HomeScreen, SampleScene off).
 - Save written by `LevelExit` (see `level.md`) when both animals reach an exit with a `Next Scene`.
@@ -127,17 +127,19 @@ Canvas (Overlay, scale 1920x1080 match 0.5, MainMenu script)
 
 The camera sees 38.4 x 21.6 units, which is exactly the 3840x2160 sky at 100 pixels per unit. The sky is scaled 1.04 so a drifting edge never shows the camera colour.
 
-Buttons use slices of `cow and crow ui.png` (`cow and crow ui_N`):
+Buttons use slices of `Assets/Art/UI/cow and crow ui.png` (`cow and crow ui_N`, plus `_bubble` and `_tail`):
 
 | Slice | What | Used by |
 |---|---|---|
 | 0, 2, 4 | long button, light | Start/Credits/Intro Skip (0), Settings and both Back buttons (4), 2 unused |
 | 1, 3, 5 | long button, dark (same row as 0, 2, 4) | hover and pressed sprite of the matching light one |
-| 6 | small square, light, 50 px 9-slice borders | toggle box, slider handle, moo bubble Body and Tail, tutorial `Sign` |
+| 6 | small square, light, 50 px 9-slice borders | toggle box, slider handle, tutorial `Sign` |
 | 7 | slider track | slider Background |
 | 8 | small square, dark | toggle checkmark |
 | 9 | cream strip | slider Fill |
 | 10 | big panel | Credits panel |
+| `_bubble` | oval speech bubble, light, Simple (not sliced) | moo bubble Body (`level.md`) |
+| `_tail` | speech bubble tail, points down, Simple | moo bubble Tail (`level.md`) |
 
 Button setup: Image = light slice, Button Transition = Sprite Swap with Highlighted and Pressed = dark slice, Selected and Disabled = light slice. Label: TMP, `Kkscribble SDF`, plum #2E1A2B, size 56. `ButtonPop` on the button; Button `OnClick` = `ButtonPop.Pop`; real action in `After Pop`:
 
@@ -183,7 +185,7 @@ Motion was doubled on 23 Nov (still not tuned by the owner). Ripple scale 6 and 
 
 `ButtonPop` (on each button): `Curve` scale 1, 0.9 at 40%, 1.05 at 75%, 1 at the end; `Duration` 0.2 s. Repeat clicks while it plays are ignored.
 
-Swapping the title lettering: put a new sprite on `TitleArt > Title > SpriteRenderer`, set Single sprite mode in its import, and move the object to taste.
+Title lettering: `TitleArt > Title > SpriteRenderer` shows `Assets/Art/Title/title logo.png`, slice `title logo` (the whole 688 x 540 image, PPU 100, centre pivot), at position (-11.8, 5.6), order 8, material `M_TitleLogo`. The artist's halves `title (1)_0` (top) and `title (1)_1` (bottom) are unused. To swap: put a new sprite on that SpriteRenderer, set Single sprite mode in its import, and move the object to taste.
 
 ## Not built yet
 

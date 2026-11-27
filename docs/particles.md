@@ -6,7 +6,9 @@ Small bits of life in both levels. Now and then a butterfly flutters across the 
 
 ## Where it lives
 
-- Art: `Assets/Art/Particles/particles.png`, white shapes sliced into 7 sprites. White, so each particle system tints them with its Start Color. `particles_0` and `particles_2` are the butterfly's two wing poses, `particles_1`, `_3`, `_4` and `_6` are leaves (used by `PF_LeafBurst`), and `particles_5` is the ladybug.
+- Art: two white sheets in `Assets/Art/Particles/`, so each particle system tints them with its Start Color.
+  - `particles v2.png`, 7 slices `particles (1)_0` to `_6`: `_1` is the ladybug, `_2`, `_4` and `_5` are leaves (`PF_LeafBurst`). `_0` (one butterfly pose), `_3` (small ring) and `_6` (dot) are unused.
+  - `particles.png`, 7 slices `particles_0` to `_6`: only the butterfly's two wing poses, `particles_0` and `particles_2`. It stays until v2 gets a second butterfly pose.
 - Prefabs in `Assets/Prefabs`, one Particle System each, with no scripts:
   - `PF_Butterflies`, which has a child `Trail` (the specks)
   - `PF_Ladybug`
@@ -65,5 +67,5 @@ All on the prefabs, in `Assets/Prefabs`. Change the prefab, not the scene copy, 
 - Play On Awake is shared by a particle system and all its child systems: switching it off on `Trail` also switched off the butterflies themselves (fixed 27 Nov 2026). Keep it on for `PF_Butterflies`.
 - The editor pauses particle simulation while it isn't focused. To preview a system in edit mode, select it: the Scene view's Particle Effect panel plays it.
 - Texture Sheet Animation in Sprites mode needs all its sprites from one texture, which `particles.png` is.
-- If the artist re-exports `particles.png`, keep the slice names (`particles_0` to `_6`), or the prefabs lose their sprites.
+- If the artist re-exports either sheet, keep its slice names (`particles_0` and `particles_2` in `particles.png`; `particles (1)_1`, `_2`, `_4` and `_5` in v2), or the prefabs lose their sprites.
 - The sheet is white shapes only: the ladybug is a flat red silhouette with no spots. Detail would need new art.
