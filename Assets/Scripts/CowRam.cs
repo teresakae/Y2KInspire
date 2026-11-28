@@ -73,7 +73,18 @@ public class CowRam : MonoBehaviour
     [Tooltip("Played when the dash kills a snake. Empty = silent.")]
     [SerializeField] private AudioClip snakeHitClip;
 
+    [Tooltip("Played when the crosshair locks onto a target, and when the charge becomes ready. Empty = silent.")]
+    [SerializeField] private AudioClip lockClip;
+    [Tooltip("Volume of the lock sound.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float lockVolume = 0.6f;
+    [Tooltip("Lowest random pitch of the lock sound.")]
+    [SerializeField] private float lockPitchMin = 0.9f;
+    [Tooltip("Highest random pitch of the lock sound.")]
+    [SerializeField] private float lockPitchMax = 1.1f;
+
     private AudioSource audioSource;
+    bool hadTarget;
     PlayerControl player;
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -149,6 +160,7 @@ public class CowRam : MonoBehaviour
             // PlayerControl stays on but aim-only: WASD turns the aim, it sets no velocity.
             charging = true;
             ready = false;
+            hadTarget = false;
             charge = 0f;
             player.aimOnly = true;
             rb.linearVelocity = Vector2.zero;
@@ -163,6 +175,7 @@ public class CowRam : MonoBehaviour
             {
                 ready = true;   // once per charge
                 popTimer = readyFlashTime;
+                PlayLock();
                 if (cam != null) cam.Shake(readyShake);
             }
             popTimer -= Time.deltaTime;
@@ -170,7 +183,10 @@ public class CowRam : MonoBehaviour
             sr.color = Color.Lerp(baseColor, readyFlashColor, pop);
             Vector3 squashed = new Vector3(1 + (1 - squash) * charge, Mathf.Lerp(1, squash, charge), 1);
             transform.localScale = Vector3.Scale(baseScale, squashed);
-            ShowCrosshair(FindTarget());
+            Transform locked = FindTarget();
+            if (locked != null && !hadTarget) PlayLock();   // first lock only, not every frame
+            hadTarget = locked != null;
+            ShowCrosshair(locked);
         }
         else
         {
@@ -180,6 +196,7 @@ public class CowRam : MonoBehaviour
                 // Soft lock: dash at the snake, not along the 8-way aim. lastDir follows so AlongScale and TryHitTree agree.
                 player.lastDir = ((Vector2)target.position - (Vector2)transform.position).normalized;
             }
+            hadTarget = false;
             if (crosshair != null) crosshair.SetActive(false);
             sr.color = baseColor;
             transform.localScale = baseScale;
@@ -234,12 +251,20 @@ public class CowRam : MonoBehaviour
         crosshairSr.sprite = (ready && crosshairReadySprite != null) ? crosshairReadySprite : crosshairNormalSprite;
     }
 
+    void PlayLock()
+    {
+        if (lockClip == null) return;
+        audioSource.pitch = Random.Range(lockPitchMin, lockPitchMax);
+        audioSource.PlayOneShot(lockClip, lockVolume);
+    }
+
     // Snakes check this: only a dash charged past Min Charge kills them.
     public bool IsStrongDash => dashing && dashCharge >= minCharge;
 
     // Called by the snake it kills: same thump as a strong tree hit, so the kill lands.
     public void HitSnake()
     {
+        audioSource.pitch = 1f;   // the lock sound leaves a random pitch behind
         if (snakeHitClip != null) audioSource.PlayOneShot(snakeHitClip);
         if (cam != null) cam.Shake(snakeShake);
         StartHop();

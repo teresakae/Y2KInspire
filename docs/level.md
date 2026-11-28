@@ -34,7 +34,7 @@ Order of events:
 4. The crow clears fog (see `fog.md`), the cow follows, rams the tree, the crow eats (see `players.md`, `trees.md`).
 5. Both the cow and the crow are inside the exit trigger. `LevelExit` saves `Next Scene` and starts fading to white. When the fade starts, `LevelExit` begins loading `Next Scene` in the background (`LoadSceneAsync`, activation held); when alpha reaches 1 it lets the scene switch on. One frame's fade step is capped at 0.05 s so a slow frame after a load can't jump the fade. If one animal steps out before that, the fade still finishes: the fade starts once and does not cancel.
 
-`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and sits on the bubble's edge on that side (straight down when the goal is on screen; there is no Tail Distance field, the script uses the bubble's size); `Tail Angle Offset` fixes the art direction. Each moo also pops (`Pop Curve` over `Pop Time`, 0.35 s) and the bubble wiggles `Wiggle Angle` degrees each way at `Wiggle Speed`. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden. Moo sound: at the start of each cycle (the first frame, then each time `t` wraps) `PlayMoo()` pans the `AudioSource` (`panStereo`) by the goal's screen side (left of centre = negative, right = positive) times `Pan Amount`, then plays ``Moo Clip`` once at `Moo Volume`. The AudioSource is found in `Awake` (added with Play On Awake off if missing). No target or empty clip = silent. Fields: `Moo Clip` `Cow_mooHerd` (set in `PF_HUD`), `Moo Volume` 0.8, `Pan Amount` 0.7.
+`MooPrompt` (moo bubble on `HUD > MooBubble`): timing is `t = Time.timeSinceLevelLoad % Interval` (so a restart opens on a moo too). Alpha rises 0 to 1 over `Fade Time`, holds for `Hold Time`, falls back over `Fade Time`, then stays 0 until the next interval; times `Max Alpha`, written to the `CanvasGroup`. Placement runs in `LateUpdate` (after the smoothed camera): `cam.WorldToScreenPoint(target)`. If the goal is inside the screen shrunk by `Edge Padding`, the bubble sits at that point plus `On Screen Offset` pixels up. If not, the bubble sits on the padded screen edge, along the line from screen centre to the goal. The `Tail` child turns to point along that line and sits on the bubble's edge on that side (straight down when the goal is on screen; there is no Tail Distance field, the script uses the bubble's size); `Tail Angle Offset` fixes the art direction. Each moo also pops (`Pop Curve` over `Pop Time`, 0.35 s) and the bubble wiggles `Wiggle Angle` degrees each way at `Wiggle Speed`. Body and text stay upright. Padding and offset are multiplied by the canvas scale factor so they match 1920x1080. No target = bubble stays hidden. Moo sound: at the start of each cycle (the first frame, then each time `t` wraps) `PlayMoo()` pans the `AudioSource` (`panStereo`) by the goal's screen side (left of centre = negative, right = positive) times `Pan Amount`, then plays the next of `Moo Clips` once at `Moo Volume`. The AudioSource is found in `Awake` (added with Play On Awake off if missing). No target or empty clip = silent. Fields: `Moo Clips` (`Cow_mooPlayer1`, `Cow_mooPlayer2`, played in turn), `Pitch Min` / `Pitch Max` 0.95 / 1.05, `Moo Volume` 0.8, `Pan Amount` 0.7.
 
 Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `Hold Time` 1.6, `Max Alpha` 0.95, `Bubble`, `Tail` (RectTransforms), `Group` (CanvasGroup), `Cam` (empty = Main Camera), `Target` (Transform), `Edge Padding` 175 px, `On Screen Offset` 110 px, `Tail Angle Offset` 90 (the tail art points down), `Pop Curve`, `Pop Time` 0.35, `Wiggle Angle` 4, `Wiggle Speed` 14. Script defaults differ (Fade Time 0.6, Hold Time 1, Max Alpha 0.6, Edge Padding 80, On Screen Offset 60).
 
@@ -44,17 +44,16 @@ Moo bubble fields (`MooPrompt`, scene values): `Interval` 6, `Fade Time` 0.2, `H
 
 ## Scene setup
 
-Audio (both levels). Two root objects, each with an AudioSource: Loop on, Play On Awake on, Spatial Blend 0 (2D).
+Audio (both levels). Two root objects, each with an AudioSource (output: mixer group Music, see `menu.md`, Audio mixer): Loop on, Play On Awake on, Spatial Blend 0 (2D).
 
 | Object | AudioSource > AudioClip | Volume |
 |---|---|---|
 | `Music` | `BGM_forest` | 0.4 |
 | `Ambience` | `AMB_Nature` | 0.2 |
-| `Ambience` (Level2 only, second AudioSource) | `AMB_Water` | 0.15 |
+| `Ambience` (Level2 only, second AudioSource) | `AMB_water` | 0.1 |
 
-Exit sound: `LevelExit > Transition Clip` (`UI_areaTransition`) plays once in `StartLeaving()`, when both animals are in the exit and the fade starts. Empty = silent. Clips live in `Assets/Audio`. All sound fields are now assigned (prefabs `PF_HUD`, `PF_SettingsPanel`, `PF_Fruit`, `PF_TutorialTip`, plus scene objects): `ButtonPop.clickClip` `UI_buttonClick`; `FruitTree.hitClip` `SFX_TreeHit`, `shakeClip` `SFX_TreeShake`; `Fruit.dropClip` `SFX_FruitDrop`; `CrowEnergy.eatClip` `SFX_CrowEat`, `drownClip` `Crow_drown`; `CowRam.snakeHitClip` `SFX_SnakeHit`; `Snake.hissClip` `SFX_SnakeHiss`, `attackClip` `SFX_SnakeAttack`; `LevelExit.transitionClip` `SFX_AreaTransition`; `TutorialTip.guideClip` `UI_guide`; `MooPrompt.mooClip` `Cow_mooHerd`; `PlayerControl.moveLoop` `Cow_walk` / `Crow_fly2`.
+Exit sound: `LevelExit > Transition Clips` (`UI_areaTransition1..4`, played in turn, a static counter that survives scene loads) plays once in `StartLeaving()`, when both animals are in the exit and the fade starts. Empty = silent. The unsplit `UI_areaTransition`, `Snake_hiss`, `Tree_dropFruit` are kept in `Assets/Audio` but unused. All clips are flat in `Assets/Audio` (mp3; `Assets/Audio/SFX` is gone). Sound fields assigned (prefabs `PF_HUD`, `PF_SettingsPanel`, `PF_Fruit`, `PF_TutorialTip`, plus scene objects): `ButtonPop.clickClip` `UI_buttonClick`, `hoverClip` `UI_hover`; `FruitTree.hitClip` `Tree_hit`, `shakeClip` `Tree_shake`; `Fruit.dropClips` `Tree_dropFruit1/2`; `CrowEnergy.eatClip` `Crow_eat`, `drownClip` `Crow_drown`, `landClip` `Crow_land`; `CowRam.snakeHitClip` `Snake_hit`, `lockClip` `Cow_lock`; `Snake.hissClips` `Snake_hiss1..3`, `attackClips` `Snake_attack`, `crowDieClip` `Crow_die`; `LevelExit.transitionClips` `UI_areaTransition1..4`; `TutorialTip.guideClip` `UI_guide`; `MooPrompt.mooClips` `Cow_mooPlayer1/2`; `PlayerControl.stepClips` `Cow_walk1..3` (cow), `moveLoop` `Crow_fly` (crow). The herd moo `Cow_mooHerd` plays once in HomeScreen (see `menu.md`).
 
-`Assets/Audio/SFX` holds single takes cut with ffmpeg (16-bit WAV, 0.08 s fade-out) from the sound sheets, which stay untouched: `SFX_TreeHit` = `Tree_hit` 0 to 0.6 s; `SFX_SnakeHit` = `Tree_hit` 0.88 to 1.45 s (silent, unused); `SFX_FruitDrop` = `Tree_dropfruit` 0 to 0.8 s; `SFX_TreeShake` = `Tree_shake` 0 to 2.2 s; `SFX_CrowEat` = `Crow_eat` 0 to 2.0 s; `SFX_AreaTransition` = `UI_areaTransition` 0.4 to 4.0 s; `SFX_SnakeHiss`/`SFX_SnakeAttack` (old, silent or unused); `SFX_SnakeHiss1..3` = `Snake_hiss` 0.65+0.6 s, 1.33+0.45 s, 1.82+0.46 s; `SFX_SnakeAttack1..3` = `Snake_attack` 11.9+0.91 s, 16.4+0.85 s, 21.3+0.7 s (48 kHz, 0.05 s fade-out); `SFX_CrowDrown` = `Crow_drown` 0.46+0.74 s; `SFX_CrowEat` is `Crow_eat` louder (see `players.md`).
 
 Not built: finish-area cow bells (clip not delivered).
 
@@ -117,7 +116,7 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 | Hold-inside margin | Main Camera | SharedCamera > Edge Margin | 0.5 |
 | Shake fade (s) | Main Camera | SharedCamera > Shake Time | 0.25 (`Shake(strength)` is called by `CowRam` on a ram hit, see players.md) |
 | Seconds between moos | MooBubble | MooPrompt > Interval | 6 |
-| Moo sound / volume / pan | MooBubble | MooPrompt > Moo Clip / Moo Volume / Pan Amount | none (Moo Clip cleared 28 Nov 2026: too many cow noises; the bubble is silent) / 0.8 / 0.7 |
+| Moo sound / volume / pan | MooBubble | MooPrompt > Moo Clips / Moo Volume / Pan Amount | `Cow_mooPlayer1`, `Cow_mooPlayer2` / 0.8 / 0.7 |
 | Moo fade (s) | MooBubble | MooPrompt > Fade Time | 0.2 |
 | Moo hold (s) | MooBubble | MooPrompt > Hold Time | 1.6 |
 | Moo strength | MooBubble | MooPrompt > Max Alpha | 0.95 |
@@ -142,7 +141,6 @@ Corner glitch: `SPR_GroundPuddle` and `SPR_GroundMeadowRound` both have an opaqu
 
 ## Not built yet
 
-- Player moo clips `Cow_mooPlayer1/2` are in `Assets/Audio`, unused; `Cow_mooHerd` is no longer assigned either.
 - A solid collider on the crow, and the `Cow` layer, so tree walls stop the crow.
 - The `Snake` object is in Level1 but inactive; snakes live in Level2.
 
@@ -188,7 +186,7 @@ Trees (`Walls`, 75 `WallTree` instances, scale 1: 44 kept from v4 and 31 new `Tr
 5. A flood fill from the start finds any gap where the cow could leave the paths and puts a tree in it (`Tree_Patch*`). The v5 rebuild needed none.
 Fruit trees are never part of a wall: each stands in the middle of its own clearing, with room to walk round it.
 
-Fruit trees (`FruitTrees`): `Tree_Fork` PF_Fruit, cooldown 6; `Tree_FruitA`, `Tree_FruitB` PF_FruitQuick (`Fruit > Lifetime` 8), cooldown 0.5; `Tree_Meeting` PF_Fruit, cooldown 0.5. Each tree's position is its clearing centre minus (0, 1.58), except `Tree_Fork` at (8.21, -0.45), which is the fork clearing centre (8.5, -0.07) plus (-0.29, -0.38). Trunk collider 2.2 x 1.7 at offset (0.03, 0.135), trunk only (see `trees.md`): the old 2.2 x 4.59 box reached up into the canopy and left `Tree_FruitA` a 0.5 gap under the top wall, too narrow for the cow's 0.8-tall feet box.
+Fruit trees (`FruitTrees`): `Tree_Fork` PF_Fruit, cooldown 0.5 (was 6; it made the first tree feel unhittable); `Tree_FruitA`, `Tree_FruitB` PF_FruitQuick (`Fruit > Lifetime` 8), cooldown 0.5; `Tree_Meeting` PF_Fruit, cooldown 0.5. Each tree's position is its clearing centre minus (0, 1.58), except `Tree_Fork` at (8.21, -0.45), which is the fork clearing centre (8.5, -0.07) plus (-0.29, -0.38). Trunk collider 2.2 x 1.7 at offset (0.03, 0.135), trunk only (see `trees.md`): the old 2.2 x 4.59 box reached up into the canopy and left `Tree_FruitA` a 0.5 gap under the top wall, too narrow for the cow's 0.8-tall feet box.
 
 Snakes (`Snakes`, 16, scale 0.5, `Dead` = `SPR_SnakeDead`, Order in Layer 14 so they draw under the cow 15, crow 16, canopies 17 and fog 19, `Obstacles` = Default + Water): staggered so no straight line down a path misses them. `Short0` (8.5, -6.6) right below the fork, inside the fork's open-at-start fog circle so it is visible from the fork; `Short1` (6.3, -10.2), `Short2` (10.6, -12.4), `Short3` (14.6, -16.4), `Short4` (18.0, -19.4) on the short branch; `Long0` (33.6, 0.6), `Long1` (36.0, -14.4), `Long2` (16.8, -0.6), `Long3` (27.9, -14.9) on the long branch; `Final0` (22.4, -22.4), `Final1` (26.4, -25.2), `Final2` (23.6, -27.4), `Final3` (30.0, -27.4), `Final4` (31.7, -25.5), `Final5` (34.8, -27.2), `Final6` (39.2, -25.4) along the final stretch with `Chase Range` 4 and `Chase Speed` 2.1 (cow walks at 3, crow flies at 5). The others have `Chase Range` 0. All are in `Tip_Snake > Targets`. Checked in Play (v4): no snake starts blocked, each has 1 unit of free space around it. `Final4` and `Long3` were nudged from the plan to get that. `Final2`, `Final3`, `Final5` are kept off the map's bottom edge (y -30). The short-branch snakes were moved for v5; each has 1 unit free (bridge check, not in Play).
 
@@ -206,7 +204,7 @@ Tuning (Level2 values):
 | Final-stretch regrow | Fog Grid | FogGrid > Fast Regrow Zones | FastFogZone |
 | Final snakes chase | Snake_Final0..6 | Snake > Chase Range / Chase Speed | 4 / 2.1 |
 | Crow energy | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 (a full bar is 25 s of flight, a fruit 7.5 s) |
-| Fork tree cooldown | Tree_Fork | FruitTree > Cooldown | 6 |
+| Fork tree cooldown | Tree_Fork | FruitTree > Cooldown | 0.5 |
 | Long-path fruit life | PF_FruitQuick | Fruit > Lifetime | 8 |
 | Exit target | Exit | LevelExit > Next Scene | HomeScreen |
 | Motes box | Motes | Particle System > Shape > Scale / Emission | (66, 38) / 35 per s, max 240 |

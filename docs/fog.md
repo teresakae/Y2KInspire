@@ -92,7 +92,12 @@ All on `Fog Grid > Fog Grid`.
 | Start clearing centre and size | Clearing | Transform > Position / Scale | (4.64, -0.30) / X scale 8.4 (radius 4.2). `Clearing2`: (21.63, 0.38) / X scale 14 |
 | Camera view | Main Camera | Camera > Size | 6 (orthographic) |
 
-Fog opacity is the alpha of `Fog Color` (currently 1, fully opaque).
+How to change fog thickness:
+
+1. `Fog Grid > Fog Color` alpha is the master opacity: higher = thicker everywhere.
+2. `Fog Grid > Thin Alpha` raises the thin patches (1 = no thin patches, even fog).
+3. Keep `M_FogSwirl > _FullAlpha` equal to `Fog Color` alpha. The material is shared by both levels, so when Level1 and Level2 differ (currently `_FullAlpha` 0.85, Level2 `Fog Color` alpha 0.7) the thinning noise is off by the difference.
+4. `M_FogSwirl > _BreatheAmount` lower = less thinning (0 = steady fog).
 
 ## Fog shader
 

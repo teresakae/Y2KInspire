@@ -40,15 +40,23 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private ParticleSystem flyParticles;
 
     [Header("Sound")]
-    [Tooltip("Looping movement sound: cow footsteps / crow wing flaps. Empty = silent.")]
+    [Tooltip("Looping movement sound (crow wing flaps). Ignored when Step Clips has entries. Empty = silent.")]
     [SerializeField] private AudioClip moveLoop;
-    [Tooltip("Volume of the movement loop.")]
+    [Tooltip("Volume of the movement loop and of footsteps.")]
     [Range(0f, 1f)]
     [SerializeField] private float moveVolume = 0.5f;
     [Tooltip("Lowest random pitch each time the loop starts.")]
     [SerializeField] private float pitchMin = 0.9f;
     [Tooltip("Highest random pitch each time the loop starts.")]
     [SerializeField] private float pitchMax = 1.1f;
+    [Tooltip("Footstep clips (cow). Played in turn, one per Step Interval while walking. Empty = use the loop instead.")]
+    [SerializeField] private AudioClip[] stepClips;
+    [Tooltip("Seconds between footsteps.")]
+    [SerializeField] private float stepInterval = 0.3f;
+    [Tooltip("Footstep pitch varies by this much either way around 1.")]
+    [SerializeField] private float stepPitchJitter = 0.05f;
+    [Tooltip("Seconds the movement loop takes to fade in and out, so short stops don't chop it.")]
+    [SerializeField] private float loopFadeTime = 0.15f;
 
     // Set by CrowEnergy: 1 = normal, lower = tired.
     [HideInInspector] public float speedScale = 1f;
@@ -62,6 +70,9 @@ public class PlayerControl : MonoBehaviour
     Sprite lastFacing;
     Vector3 shadowOffset;
     AudioSource loopSource;
+    bool loopOn;        // whether the loop should be audible; the fade follows it
+    float stepTimer;    // counts down to the next footstep; 0 = step now
+    int nextStep;
 
     void Start()
     {
@@ -73,7 +84,9 @@ public class PlayerControl : MonoBehaviour
         loopSource.loop = true;
         loopSource.playOnAwake = false;
         loopSource.clip = moveLoop;
-        loopSource.volume = moveVolume;
+        loopSource.volume = 0f;
+        AudioSource own = GetComponent<AudioSource>();   // the mixer group, if one is set on the animal's own source
+        if (own != null) loopSource.outputAudioMixerGroup = own.outputAudioMixerGroup;
         if (flyShadow != null)
         {
             shadowOffset = flyShadow.transform.position - transform.position;
@@ -86,7 +99,8 @@ public class PlayerControl : MonoBehaviour
 
     void Update()
     {
-        if (Time.timeScale == 0f) { SetLoop(false); return; } // paused
+        FadeLoop();
+        if (Time.timeScale == 0f) { SetSound(false); return; } // paused
         // ponytail: keyboard only; add gamepad or an Input Actions asset if needed
         var kb = Keyboard.current;
         float x = 0, y = 0;
@@ -105,13 +119,13 @@ public class PlayerControl : MonoBehaviour
         if (aimOnly)
         {
             sr.sprite = lastFacing;
-            SetLoop(false);
+            SetSound(false);
             return;
         }
 
         // Optional: while a key is held, show the flying sprite and the shadow. Leave both empty for no change.
         bool tired = speedScale < 1f;
-        SetLoop(moving && !tired);
+        SetSound(moving && !tired);
         bool flying = moving && fly != null && !tired;
         Sprite[] walk = x > 0 ? walkRight : x < 0 ? walkLeft : y > 0 ? walkUp : y < 0 ? walkDown : null;
         if (flyParticles != null)
@@ -143,15 +157,38 @@ public class PlayerControl : MonoBehaviour
 
     void OnDisable()
     {
-        SetLoop(false);   // Drown disables this script while the animal may still be "moving"
+        // Drown disables this script while the animal may still be "moving": cut at once, no fade.
+        loopOn = false;
+        stepTimer = 0f;
+        if (loopSource != null) { loopSource.Stop(); loopSource.volume = 0f; }
     }
 
-    void SetLoop(bool on)
+    // Cow: a footstep every Step Interval, the first one the moment walking starts. Crow: the loop fades in or out.
+    void SetSound(bool walking)
     {
-        if (moveLoop == null || loopSource == null || loopSource.isPlaying == on) return;
-        if (!on) { loopSource.Stop(); return; }
-        loopSource.pitch = Random.Range(pitchMin, pitchMax);
-        loopSource.time = Random.value * moveLoop.length * 0.99f;   // random start so two animals don't step in sync
-        loopSource.Play();
+        if (loopSource == null) return;
+        if (stepClips == null || stepClips.Length == 0) { loopOn = walking; return; }
+        if (!walking) { stepTimer = 0f; return; }
+        stepTimer -= Time.deltaTime;
+        if (stepTimer > 0f) return;
+        stepTimer = stepInterval;
+        loopSource.pitch = 1f + Random.Range(-stepPitchJitter, stepPitchJitter);
+        loopSource.PlayOneShot(stepClips[nextStep++ % stepClips.Length], moveVolume);
+    }
+
+    // Fades toward Move Volume or 0. Only a fully stopped loop restarts (new pitch, random start), so brief stops don't retrigger the clip.
+    void FadeLoop()
+    {
+        if (moveLoop == null || loopSource == null || (stepClips != null && stepClips.Length > 0)) return;
+        if (loopOn && !loopSource.isPlaying)
+        {
+            loopSource.pitch = Random.Range(pitchMin, pitchMax);
+            loopSource.time = Random.value * moveLoop.length * 0.99f;   // random start so two animals don't step in sync
+            loopSource.volume = 0f;
+            loopSource.Play();
+        }
+        float goal = loopOn ? moveVolume : 0f;
+        loopSource.volume = Mathf.MoveTowards(loopSource.volume, goal, moveVolume / loopFadeTime * Time.unscaledDeltaTime);
+        if (!loopOn && loopSource.volume <= 0f && loopSource.isPlaying) loopSource.Stop();
     }
 }

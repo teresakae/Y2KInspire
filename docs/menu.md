@@ -18,17 +18,18 @@ The first screen: a painted title picture with a column of buttons on the left. 
 
 ## How it works
 
-1. `MainMenu.Start`: checks the `Settings Panel` reference (LogError if missing) and calls `SettingsPanel.ApplySaved()` to apply the saved volume and motion (the panel starts inactive, so its own script has not run yet).
-   `SettingsPanel.OnEnable` (each time the panel opens): checks its references, sets the toggle from `Screen.fullScreen` and the slider from the saved volume. The UI is set with `...WithoutNotify`, so this does not trigger the change events.
-2. Each button's `OnClick` calls `ButtonPop.Pop()`; the real method (`StartGame` etc.) sits in that button's `ButtonPop > After Pop` list, so it runs after the squash. The panel's Toggle and Slider use their `On Value Changed` lists, in the Dynamic section (`SettingsPanel.SetFullscreen`, `SettingsPanel.SetVolume`), so the value is passed through.
-3. Volume sets `AudioListener.volume` (master volume for every AudioSource) and saves.
+1. `MainMenu.Start`: checks the `Settings Panel` reference (LogError if missing) and calls `SettingsPanel.ApplyVolumes()` and `ApplySaved()` to apply the saved volumes and motion (the panel starts inactive, so its own script has not run yet).
+   `SettingsPanel.OnEnable` (each time the panel opens): checks its references, sets the toggle from `Screen.fullScreen` and the two sliders from the saved volumes. The UI is set with `...WithoutNotify`, so this does not trigger the change events.
+2. Each button's `OnClick` calls `ButtonPop.Pop()`; the real method (`StartGame` etc.) sits in that button's `ButtonPop > After Pop` list, so it runs after the squash. The panel's Toggle and Slider use their `On Value Changed` lists, in the Dynamic section (`SettingsPanel.SetFullscreen`, `SettingsPanel.SetMusicVolume`, `SetSfxVolume`), so the value is passed through.
+3. The Music and SFX sliders set the mixer parameters `MusicVolume` / `SFXVolume` (see Audio mixer) and save.
 
 PlayerPrefs keys:
 
 | Key | Type | Written by | Meaning |
 |---|---|---|---|
 | `SavedLevel` | string | `LevelExit`, `PauseMenu.SaveAndQuit` | Scene name of the level reached. Start deletes it and always loads `First Level` (`Intro`), so nothing reads it at the moment (kept for a later Continue button). |
-| `Volume` | float 0-1 | `SettingsPanel.SetVolume` | Master volume. Default 1. |
+| `MusicVolume` | float 0-1 | `SettingsPanel.SetMusicVolume` | Music group volume. Default 1. |
+| `SFXVolume` | float 0-1 | `SettingsPanel.SetSfxVolume` | SFX group volume. Default 1. The old `Volume` key is unused. |
 | `Shake` | float 0-1 | `SettingsPanel.SetShake` | Screen shake multiplier. Default 1. |
 | `Motion` | float 0-1 | `SettingsPanel.SetMotion` | Motion strength (`_ReduceMotion` = 1 minus this). Default 1. |
 
@@ -38,7 +39,8 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 
 `Assets/Scripts/Intro.cs` is on `Main Camera` in `Assets/Scenes/Intro.unity` (build index 1). `Main Camera` also has an `AudioListener` (added 28 Nov 2026; the scene had none, so the menu music carried over by `MenuMusic` was inaudible). `MainMenu > First Level` is `Intro`, so Start goes here when there is no save; with a save, Start skips it and loads the saved level.
 
-- Plays `Assets/StreamingAssets/intro_white.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output None, Play On Awake off; `Intro` sets the URL and starts it).
+- While the video plays, `Intro` pauses any `MenuMusic` AudioSource (menu music carried over) and unpauses it when the video ends or is skipped.
+- Plays `Assets/StreamingAssets/intro cutscene.mp4` (H.264, 1920x1080, 36.5 s, 8.4 MB) through the camera's `VideoPlayer` (Render Mode Camera Far Plane, Aspect Ratio Fit Inside, Audio Output Mode Audio Source (the source is on `Main Camera`, output group Music), Play On Awake off; `Intro` sets the URL and starts it).
 - `Start` begins loading `Intro > Next Scene` (default `Level1`) in the background with activation held, so the level is ready behind the video. When the video ends or the `SkipButton` is clicked, `Leave()` starts a fade to white (`Canvas > Fade`, `Fade Time` 0.5 s, step capped at 0.05 s per frame); at full white the loaded scene switches on. Input is ignored once leaving. If the video fails to load it logs an error and leaves the same way. No `Fade` Image = logs an error and switches at once.
 - The camera background is white, so letterbox bars match the video's white frames.
 - `Canvas > Fade`: full-screen white Image, alpha 0, Raycast Target off, last sibling so it covers `SkipButton`; wired to `Main Camera > Intro > Fade`.
@@ -46,7 +48,7 @@ Every write is followed by `PlayerPrefs.Save()`, because WebGL does not persist 
 
 | What | Field | Value |
 |---|---|---|
-| Video file | `Main Camera > Intro > File Name` | `intro_white.mp4` |
+| Video file | `Main Camera > Intro > File Name` | `intro cutscene.mp4` |
 | Fade to white (s) | `Main Camera > Intro > Fade Time` | 0.5 |
 | Scene after | `Main Camera > Intro > Next Scene` | `Level1` |
 
@@ -83,20 +85,21 @@ To check later phases without waiting, the timer is the private `elapsed` field 
 
 ## Settings panel (shared)
 
-Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its root. One copy in `MainMenu > Canvas` (Pos X 280) and one in `PF_HUD > PauseScreen`. Contents: controls card, fullscreen toggle, Volume, Screen shake and Motion rows (each a label and a slider, Min 0 Max 1, default 1), Back button (the pause copy also has Quit). Layout spacing 24 so the pause copy fits the 900 tall panel. Fields: `Fullscreen Toggle`, `Volume Slider`, `Shake Slider`, `Motion Slider`. Each slider's On Value Changed calls `SetVolume`, `SetShake` or `SetMotion`. All are saved in PlayerPrefs (`Volume`, `Shake`, `Motion`).
+Prefab `Assets/Prefabs/PF_SettingsPanel.prefab`, script `SettingsPanel` on its root. One copy in `MainMenu > Canvas` (Pos X 280) and one in `PF_HUD > PauseScreen`. Contents: controls card, fullscreen toggle, Music, SFX, Screen shake and Motion rows (`MusicRow`, `SFXRow`, ...) (each a label and a slider, Min 0 Max 1, default 1), Back button (the pause copy also has Quit). Layout spacing 24 so the pause copy fits the 900 tall panel. Fields: `Mixer` (`Assets/Audio/AudioMixer`), `Fullscreen Toggle`, `Music Slider`, `Sfx Slider`, `Shake Slider`, `Motion Slider`. Each slider's On Value Changed calls `SetMusicVolume`, `SetSfxVolume`, `SetShake` or `SetMotion`. All are saved in PlayerPrefs (`MusicVolume`, `SFXVolume`, `Shake`, `Motion`).
 
 | Method | Wire it to |
 |---|---|
 | `SetFullscreen(bool)` | Toggle On Value Changed, Dynamic bool |
-| `SetVolume(float)` | Slider On Value Changed, Dynamic float |
+| `SetMusicVolume(float)` | Music Slider On Value Changed, Dynamic float |
+| `SetSfxVolume(float)` | SFX Slider On Value Changed, Dynamic float |
 | `SetShake(float)` | Shake Slider On Value Changed, Dynamic float |
 | `SetMotion(float)` | Motion Slider On Value Changed, Dynamic float |
 | `Close()` | Back button, `ButtonPop > After Pop` (hides the panel; in the pause screen this also resumes, see Pause) |
 
-- Volume: `AudioListener.volume`, master volume for every sound.
+- Music / SFX: slider 0..1 is converted to decibels (`log10(v) * 20`, floor 0.0001) and sent to the mixer. `AudioListener.volume` is forced to 1 in `ApplyVolumes()`.
 - Screen shake: `SharedCamera.Shake` multiplies every shake by it; 0 turns shakes off.
 - Motion: sets the global shader value `_ReduceMotion` (1 minus the slider). `TitleFloat`, `GrassSway` and `TreeSway` shaders and `MistDrift` scale their movement by 1 - `_ReduceMotion`, so 0 = still, 1 = full. The global is 0 until set, so full motion by default.
-- `SettingsPanel.ApplySaved()` (static) applies saved volume and motion; `MainMenu.Start` calls it because the panel starts inactive.
+- `SettingsPanel.ApplyVolumes()` pushes saved volumes into the mixer, and `ApplySaved()` (static) applies saved motion; `MainMenu.Start` calls them because the panel starts inactive. The mixer keeps its values across scenes.
 
 ## Pause
 
@@ -176,7 +179,7 @@ Canvas (Overlay, scale 1920x1080 match 0.5, MainMenu script)
   Buttons (top left, VerticalLayoutGroup + ContentSizeFitter)
     StartButton, SettingsButton, CreditsButton
   SettingsPanel (PF_SettingsPanel instance, inactive, Pos X 280; VerticalLayoutGroup)
-    ControlsText, FullscreenToggle, VolumeRow (VolumeLabel, VolumeSlider), BackButton
+    ControlsText, FullscreenToggle, MusicRow (label, slider), SFXRow (label, slider), BackButton
   CreditsPanel (inactive)
     CreditsTitle, CreditsText, BackButton
 ```
@@ -241,9 +244,15 @@ Motion was doubled on 23 Nov (still not tuned by the owner). Ripple scale 6 and 
 
 `ButtonPop` (on each button): `Curve` scale 1, 0.9 at 40%, 1.05 at 75%, 1 at the end; `Duration` 0.2 s. Repeat clicks while it plays are ignored. `Click Clip` (`UI_buttonClick`) is played by `Pop()` through an AudioSource on the button (found in `Awake`, added with Play On Awake off if missing). Empty = silent. `Hover Clip` (`UI_hover.mp3`) plays when the pointer enters the button (`IPointerEnterHandler`), only if the Button is interactable. Both clips are wired on every ButtonPop in all scenes, `PF_HUD` and `PF_SettingsPanel`. Clips are assigned per button (or on the prefab) in the Inspector.
 
-Music: root object `Music` in `MainMenu` has an AudioSource: `AudioClip` `BGM_menu`, Loop on, Play On Awake on, Volume 0.5, Spatial Blend 0 (2D). Clips live in `Assets/Audio`. `MenuMusic` (`Assets/Scripts/MenuMusic.cs`) is on `Music` in `MainMenu`, and `Intro` and `HomeScreen` each have their own `Music` object (same AudioSource settings, plus `MenuMusic`). It marks the object `DontDestroyOnLoad`, so `BGM_menu` plays on without restarting from `MainMenu` into `Intro` and from `HomeScreen` back to `MainMenu`; a duplicate copy in the next scene destroys itself. Any scene not in its `Keep In Scenes` list (default `MainMenu`, `Intro`, `HomeScreen`) destroys it, so the level music takes over. `ButtonPop.clickClip` is `UI_buttonClick` on every button (assigned in `PF_HUD`, `PF_SettingsPanel` and the scenes). Browsers only start sound after the first click or key.
+Music: root object `Music` in `MainMenu` has an AudioSource: `AudioClip` `BGM_menu`, Loop on, Play On Awake on, Volume 0.5, Spatial Blend 0 (2D). Output group Music. Clips live in `Assets/Audio`. `MenuMusic` (`Assets/Scripts/MenuMusic.cs`) is on `Music` in `MainMenu`, and `Intro` and `HomeScreen` each have their own `Music` object (same AudioSource settings, plus `MenuMusic`). It marks the object `DontDestroyOnLoad`, so `BGM_menu` plays on without restarting from `MainMenu` into `Intro` and from `HomeScreen` back to `MainMenu`; a duplicate copy in the next scene destroys itself. Any scene not in its `Keep In Scenes` list (default `MainMenu`, `Intro`, `HomeScreen`) destroys it, so the level music takes over. `ButtonPop.clickClip` is `UI_buttonClick` on every button (assigned in `PF_HUD`, `PF_SettingsPanel` and the scenes). Browsers only start sound after the first click or key.
 
 Title lettering: `TitleArt > Title > SpriteRenderer` shows `Assets/Art/Title/title logo.png`, slice `title logo` (the whole 688 x 540 image, PPU 100, centre pivot), at position (-11.8, 5.6), order 8, material `M_TitleLogo`. The artist's halves `title (1)_0` (top) and `title (1)_1` (bottom) are unused. To swap: put a new sprite on that SpriteRenderer, set Single sprite mode in its import, and move the object to taste.
+
+## Audio mixer
+
+`Assets/Audio/AudioMixer.mixer`. Groups: `Music` (BGM, ambience, intro video audio) and `SFX` (everything else). Exposed parameters `MusicVolume` and `SFXVolume`, set by `SettingsPanel` (dB, see Settings panel). Every object with a sound script has a saved AudioSource with Output = `SFX`: a runtime-added AudioSource would bypass the mixer, so don't rely on the scripts' fallback `AddComponent`. `PlayerControl`'s second (loop/step) source copies the animal's source group.
+
+`MainMenu > Ambience`: `AMB_Nature`, Loop on, Volume 0.05, group Music. `HomeScreen > HerdMoo`: `Cow_mooHerd`, Volume 0.8, plays once on load, group SFX; the herd moo after Level2.
 
 ## Not built yet
 

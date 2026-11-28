@@ -18,8 +18,15 @@ public class Fruit : MonoBehaviour
     [Tooltip("Seconds the fade-out takes, at the end of the lifetime.")]
     [SerializeField] private float fadeTime = 1f;
 
-    [Tooltip("Played when a falling fruit lands (Tree_dropfruit). Empty = silent.")]
-    [SerializeField] private AudioClip dropClip;
+    [Tooltip("Played in turn, across all fruits, when a falling fruit lands. Empty = silent.")]
+    [SerializeField] private AudioClip[] dropClips;
+    [Tooltip("Lowest random pitch.")]
+    [SerializeField] private float pitchMin = 0.9f;
+    [Tooltip("Highest random pitch.")]
+    [SerializeField] private float pitchMax = 1.1f;
+
+    // ponytail: static so every fruit shares one turn counter; resets only on domain reload
+    static int nextDrop;
 
     private AudioSource audioSource;
     SpriteRenderer sr;
@@ -78,7 +85,11 @@ public class Fruit : MonoBehaviour
             else
             {
                 falling = false;
-                if (dropClip != null) audioSource.PlayOneShot(dropClip);
+                if (dropClips != null && dropClips.Length > 0)
+                {
+                    audioSource.pitch = Random.Range(pitchMin, pitchMax);
+                    audioSource.PlayOneShot(dropClips[nextDrop++ % dropClips.Length]);
+                }
                 col.enabled = true;
                 sr.sortingOrder = groundOrder;
                 if (landedSprite != null) sr.sprite = landedSprite;   // splits open on the ground

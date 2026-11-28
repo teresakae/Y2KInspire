@@ -39,6 +39,7 @@ public class Intro : MonoBehaviour
     void Start()
     {
         if (fade == null) Debug.LogError($"{name}: missing fade");
+        SetMenuMusicPaused(true);
         // Level1 loads behind the video; it only switches on once we are fully white.
         load = SceneManager.LoadSceneAsync(nextScene);
         if (load != null) load.allowSceneActivation = false;
@@ -66,11 +67,24 @@ public class Intro : MonoBehaviour
         fade.color = c;
     }
 
+    // The menu music carries over from the menu (or this scene has its own copy). The video's sound should not fight it.
+    void SetMenuMusicPaused(bool paused)
+    {
+        foreach (MenuMusic m in FindObjectsByType<MenuMusic>())
+        {
+            AudioSource music = m.GetComponent<AudioSource>();
+            if (music == null) continue;
+            if (paused) music.Pause();
+            else music.UnPause();
+        }
+    }
+
     // The Skip button calls this (After Pop).
     public void Leave()
     {
         if (leaving) return;
         leaving = true;
+        SetMenuMusicPaused(false);
         if (fade == null && load != null) load.allowSceneActivation = true;   // no fade to wait for
     }
 }

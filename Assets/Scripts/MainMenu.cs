@@ -17,6 +17,7 @@ public class MainMenu : MonoBehaviour
         if (settingsPanel == null) Debug.LogError($"{name}: missing settingsPanel");
         // the panel starts inactive, so apply the saved volume and motion here
         SettingsPanel.ApplySaved();
+        if (settingsPanel != null) settingsPanel.GetComponent<SettingsPanel>().ApplyVolumes();
     }
 
     // Always a fresh game: clears the saved level and the tutorial tips already seen.

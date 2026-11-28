@@ -31,7 +31,14 @@ public class CrowEnergy : MonoBehaviour
     [Tooltip("Played when the crow drowns. Empty = silent.")]
     [SerializeField] private AudioClip drownClip;
 
+    [Tooltip("Played once when the crow comes down from flying. Empty = silent.")]
+    [SerializeField] private AudioClip landClip;
+    [Tooltip("Volume of the landing sound.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float landVolume = 0.6f;
+
     private AudioSource audioSource;
+    bool wasGrounded;
     PlayerControl player;
     Rigidbody2D rb;
     float energy;
@@ -54,6 +61,11 @@ public class CrowEnergy : MonoBehaviour
         if (bar == null) Debug.LogError($"{name}: missing Bar");
     }
 
+    void Start()
+    {
+        wasGrounded = IsGrounded;   // so nothing plays on the first frame
+    }
+
     void Update()
     {
         if (drowned)
@@ -66,6 +78,8 @@ public class CrowEnergy : MonoBehaviour
             }
             return;
         }
+        if (IsGrounded && !wasGrounded && landClip != null) audioSource.PlayOneShot(landClip, landVolume);
+        wasGrounded = IsGrounded;
         if (rb.linearVelocity.sqrMagnitude > 0.01f) energy -= drainPerSecond * Time.deltaTime;
         energy = Mathf.Clamp(energy, 0f, maxEnergy);
         player.speedScale = energy > 0f ? 1f : tiredSpeedScale;

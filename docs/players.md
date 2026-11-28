@@ -51,9 +51,9 @@ The cow calls the tree, not the other way round, so there is no collision-callba
 
 `CrowEnergy` on the crow. Energy starts at `Max Energy` and drains `Drain Per Second` while the Rigidbody2D moves (speed above about 0.1). It is clamped to 0..max and written to `PlayerControl.speedScale`: 1 with energy, `Tired Speed Scale` at zero (the crow hops slowly instead of being stuck). If `Bar` is set, `fillAmount = energy / max`. `Eat(amount)` adds energy, called by `Fruit` when the crow touches it. `IsGrounded` (public) is true when energy is 0 or the Rigidbody2D is standing still, so standing still counts as landed and a tired hopping crow still counts as down. `Snake` reads it, see `snakes.md`.
 
-Move loop: `PlayerControl` adds its own looping AudioSource in `Start` (separate from the one-shot source, so stopping the loop never cuts a one-shot). It plays while moving and not tired, with a random pitch (`Pitch Min` to `Pitch Max`) and a random start point each time it starts, and stops when still, tired, paused, aiming (cow charge) or when the script is disabled (drowning). `Move Loop` empty = silent. Cow uses `Cow_walk` at volume 0.4, crow `Crow_fly2` (short wing-flap loop) at 0.35.
+Movement sound: `PlayerControl` adds its own AudioSource in `Start` (separate from the one-shot source), routed to the same mixer group as the animal's own source (SFX). Cow: `Step Clips` (`Cow_walk1..3`), played round robin, one every `Step Interval` (0.3 s) while walking, the first the moment walking starts, pitch 1 +/- `Step Pitch Jitter` (0.05), at `Move Volume`. Crow: `Step Clips` empty, so the looped `Move Loop` (`Crow_fly`) plays instead. It fades in and out over `Loop Fade Time` (0.15 s) so a short stop doesn't chop it; only a fully faded loop restarts, with a random pitch (`Pitch Min` to `Pitch Max`) and random start point. Sound stops when still, tired, paused, aiming (cow charge); when the script is disabled (drowning) it cuts at once. Empty `Step Clips` and `Move Loop` = silent.
 
-Sounds: `CrowEnergy > Eat Clip` plays in `Eat()`; `CrowEnergy > Drown Clip` plays at the start of `Drown()` (`SFX_CrowEat` = `Crow_eat` raised +20.5 dB to a -1.1 dB peak; `SFX_CrowDrown` = `Crow_drown` 0.46 to 1.2 s, the leading silence cut, 0.1 s fade-out; assigned in both levels). Both go through an AudioSource found in `Awake` (added with Play On Awake off if missing); empty = silent.
+Sounds: `CrowEnergy > Eat Clip` plays in `Eat()`; `CrowEnergy > Drown Clip` plays at the start of `Drown()`; `CrowEnergy > Land Clip` (`Crow_land`, `Land Volume` 0.6) plays once when `IsGrounded` turns true after flying (not on the first frame). Cow: `CowRam > Lock Clip` (`Cow_lock`, `Lock Volume` 0.6, random pitch `Lock Pitch Min` to `Lock Pitch Max` 0.9 to 1.1) plays twice per charge: when the crosshair first locks a target, and when the charge becomes ready. Each goes through an AudioSource found in `Awake` (added with Play On Awake off if missing; the scenes use a saved one routed to the SFX mixer group); empty = silent.
 
 Drowning: when the crow is landed (standing still, or at zero energy) over a collider with a `Water` component (`Water.cs`, an empty marker) for more than `Land Grace` seconds, it drowns: input stops, its sprites and bar hide, the camera shakes (`Drown Shake`), and after `Drown Delay` seconds the lose screen shows "Crow cant swim!" (see `menu.md`, Lose screen). The grace stops a quick change of direction mid-flight from counting as landing. In Level2 `River` and `Pond` have `Water`; the pond's collider has a hole over the island, so a crow can land there safely.
 
@@ -95,9 +95,11 @@ On the `PlayerControl` component of each object.
 | Energy (Level1) | Crow | CrowEnergy > Drain Per Second | 15 (tired scale 0.07) |
 | Energy (Level2) | Crow | CrowEnergy > Drain Per Second / Tired Speed Scale | 4 / 0.3 |
 | Drowning | Crow | CrowEnergy > Drown Delay / Land Grace / Drown Shake | 0.6 / 0.3 / 0.4 |
-| Crow sounds | Crow | CrowEnergy > Eat Clip / Drown Clip | `SFX_CrowEat` / `SFX_CrowDrown` |
-| Move loop | Cow, Crow | PlayerControl > Move Loop / Move Volume / Pitch Min / Pitch Max | Cow `Cow_walk` 0.4, Crow `Crow_fly2` 0.35; pitch 0.9 to 1.1 |
-| Cow snake hit sound | Cow | CowRam > Snake Hit Clip | `SFX_TreeHit` (played in `HitSnake()`; the old `SFX_SnakeHit` was silent) |
+| Crow sounds | Crow | CrowEnergy > Eat Clip / Drown Clip / Land Clip / Land Volume | `Crow_eat` / `Crow_drown` / `Crow_land` / 0.6 |
+| Footsteps (cow) | Cow | PlayerControl > Step Clips / Step Interval / Step Pitch Jitter / Move Volume | `Cow_walk1..3` / 0.3 / 0.05 / 0.4 |
+| Move loop (crow) | Crow | PlayerControl > Move Loop / Move Volume / Loop Fade Time / Pitch Min / Pitch Max | `Crow_fly` / 0.35 / 0.15 / 0.9 to 1.1 |
+| Cow lock sound | Cow | CowRam > Lock Clip / Lock Volume / Lock Pitch Min / Lock Pitch Max | `Cow_lock` / 0.6 / 0.9 / 1.1 |
+| Cow snake hit sound | Cow | CowRam > Snake Hit Clip | `Snake_hit` (played in `HitSnake()`) |
 | Crow size | Crow | Transform > Scale | 0.5 |
 | Cow collider (feet only) | Cow | BoxCollider2D > Size / Offset | 1.6 x 0.8 / (0, -0.8) |
 | Body type, gravity | Cow, Crow | Rigidbody2D > Body Type / Gravity Scale | Dynamic / 0 |

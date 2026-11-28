@@ -60,7 +60,7 @@ public class Snake : MonoBehaviour
     [SerializeField] private UnityEvent<Transform> onHit;
 
     [Header("Sound")]
-    [Tooltip("Hiss takes (SFX_SnakeHiss1..3). One random take plays when first revealed and now and then while roaming. Empty = silent.")]
+    [Tooltip("Hiss takes (SFX_SnakeHiss1..3). Played in turn when first revealed and now and then while roaming, only while the snake is out of the fog. Empty = silent.")]
     [SerializeField] private AudioClip[] hissClips;
     [Tooltip("Sharp attack takes (SFX_SnakeAttack1..3). One random take plays when it eats the crow. Empty = uses a hiss take.")]
     [SerializeField] private AudioClip[] attackClips;
@@ -71,6 +71,15 @@ public class Snake : MonoBehaviour
     [Tooltip("Volume of the reveal and roaming hisses.")]
     [Range(0f, 1f)]
     [SerializeField] private float roamVolume = 0.4f;
+    [Tooltip("Lowest random pitch of a hiss.")]
+    [SerializeField] private float hissPitchMin = 0.9f;
+    [Tooltip("Highest random pitch of a hiss.")]
+    [SerializeField] private float hissPitchMax = 1.1f;
+    [Tooltip("Played with the attack sound when the snake eats the crow. Empty = silent.")]
+    [SerializeField] private AudioClip crowDieClip;
+    [Tooltip("Volume of the crow death sound.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float crowDieVolume = 1f;
     [Tooltip("Pitch of the attack hiss. Below 1 = deeper.")]
     [SerializeField] private float attackPitch = 0.9f;
 
@@ -80,6 +89,7 @@ public class Snake : MonoBehaviour
 
     AudioSource audioSource;
     float hissTimer;
+    int nextHiss;
     SpriteRenderer sr;
     Rigidbody2D rb;
     Collider2D col;
@@ -161,7 +171,8 @@ public class Snake : MonoBehaviour
         else if (hissClips != null && hissClips.Length > 0)
         {
             hissTimer -= Time.deltaTime;
-            if (hissTimer <= 0f)
+            // Silent while hidden in the fog; the timer stays at 0 so it hisses as soon as it steps out.
+            if (hissTimer <= 0f && (fog == null || fog.IsClear(transform.position)))
             {
                 PlayHiss();
                 hissTimer = Random.Range(hissMinGap, hissMaxGap);
@@ -208,6 +219,7 @@ public class Snake : MonoBehaviour
             audioSource.pitch = attackPitch;
             audioSource.PlayOneShot(bites[Random.Range(0, bites.Length)], 1f);
         }
+        if (crowDieClip != null) audioSource.PlayOneShot(crowDieClip, crowDieVolume);
         eatenTimer = eatenDelay;
         Debug.Log($"{name} ate the crow");
         crow.gameObject.SetActive(false);
@@ -220,7 +232,8 @@ public class Snake : MonoBehaviour
     void PlayHiss()
     {
         if (hissClips == null || hissClips.Length == 0) return;
-        audioSource.PlayOneShot(hissClips[Random.Range(0, hissClips.Length)], roamVolume);
+        audioSource.pitch = Random.Range(hissPitchMin, hissPitchMax);
+        audioSource.PlayOneShot(hissClips[nextHiss++ % hissClips.Length], roamVolume);
     }
 
     void Coil()

@@ -49,8 +49,12 @@ public class MooPrompt : MonoBehaviour
     [SerializeField] private float wiggleSpeed = 14f;
 
     [Header("Sound")]
-    [Tooltip("The herd's moo (Cow_mooHerd). Played at the start of each bubble, panned toward the goal. Empty = silent.")]
-    [SerializeField] private AudioClip mooClip;
+    [Tooltip("The herd's moos. Played in turn at the start of each bubble, panned toward the goal. Empty = silent.")]
+    [SerializeField] private AudioClip[] mooClips;
+    [Tooltip("Lowest random pitch per moo.")]
+    [SerializeField] private float pitchMin = 0.95f;
+    [Tooltip("Highest random pitch per moo.")]
+    [SerializeField] private float pitchMax = 1.05f;
     [Tooltip("Moo volume.")]
     [Range(0f, 1f)]
     [SerializeField] private float mooVolume = 0.8f;
@@ -60,6 +64,7 @@ public class MooPrompt : MonoBehaviour
 
     Canvas canvas;
     AudioSource audioSource;
+    int nextMoo;
     float lastT = float.MaxValue;   // large so the first frame counts as a wrap: the level opens on a moo
 
     void Awake()
@@ -127,10 +132,11 @@ public class MooPrompt : MonoBehaviour
 
     void PlayMoo()
     {
-        if (mooClip == null) return;
+        if (mooClips == null || mooClips.Length == 0) return;
         float side = (cam.WorldToScreenPoint(target.position).x - Screen.width * 0.5f) / (Screen.width * 0.5f);
         audioSource.panStereo = Mathf.Clamp(side, -1f, 1f) * panAmount;
-        audioSource.PlayOneShot(mooClip, mooVolume);
+        audioSource.pitch = Random.Range(pitchMin, pitchMax);
+        audioSource.PlayOneShot(mooClips[nextMoo++ % mooClips.Length], mooVolume);
     }
 
     // Stretches or shrinks dir until it touches a rect of this half-size: the smaller of the x and y factors.

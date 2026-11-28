@@ -19,8 +19,11 @@ public class LevelExit : MonoBehaviour
     [Tooltip("Scene to load at the exit. Also saved, so Start in the menu resumes there.")]
     [SerializeField] private string nextScene = "";
 
-    [Tooltip("Played when both players reach the exit (UI_areaTransition). Empty = silent.")]
-    [SerializeField] private AudioClip transitionClip;
+    [Tooltip("Played in turn when both players reach the exit. Empty = silent.")]
+    [SerializeField] private AudioClip[] transitionClips;
+
+    // ponytail: static so the turn survives scene loads
+    static int nextTransition;
 
     private AudioSource audioSource;
     float alpha = 1f;       // starts white, fades in
@@ -64,7 +67,7 @@ public class LevelExit : MonoBehaviour
     void StartLeaving()
     {
         leaving = true;
-        if (transitionClip != null) audioSource.PlayOneShot(transitionClip);
+        if (transitionClips != null && transitionClips.Length > 0) audioSource.PlayOneShot(transitionClips[nextTransition++ % transitionClips.Length]);
         PlayerPrefs.SetString("SavedLevel", nextScene);
         PlayerPrefs.Save();   // WebGL only persists after Save
         // Load behind the fade; the switch waits until the screen is fully white.

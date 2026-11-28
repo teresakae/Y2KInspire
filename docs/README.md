@@ -7,7 +7,7 @@ One file per system. Each describes how that system works right now, where it li
 | players.md | Cow and crow movement, input, sprites, shadows, cow ram, crow energy and drowning (`PlayerControl.cs`, `CowRam.cs`, `CrowEnergy.cs`, `Water.cs`) | Cow or Crow objects, controls, speed, sprites, ram, energy, water |
 | trees.md | Fruit trees and fruit, wall trees with random looks, tree sway (`FruitTree.cs`, `Fruit.cs`, `TreeLook.cs`, `TreeSway.shader`) | Trees, wall trees, tree art, fruit, anything the cow rams for food |
 | level.md | Level1 and Level2 flow and layout, shared camera, moo text, exit fade, music and ambience, tree walls, physics layers (`SharedCamera.cs`, `MooPrompt.cs`, `LevelExit.cs`, moo bubble in `PF_HUD`) | Level layout, camera, level start or end, layers and collision matrix |
-| menu.md | Main menu: title art with floating motion, start (fresh game), shared settings panel (fullscreen, volume), credits, saved level and volume; pause (Esc or P); lose screen (crow eaten or drowned); opening video with skip button; home screen button (`MainMenu.cs`, `ButtonPop.cs`, `SettingsPanel.cs`, `PauseMenu.cs`, `LoseScreen.cs`, `TitleFloat.shader`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, settings panel, pause, lose screen, PlayerPrefs saves, build scene order |
+| menu.md | Main menu: title art with floating motion, start (fresh game), shared settings panel (fullscreen, music and SFX volume), audio mixer, credits, saved level and volumes; pause (Esc or P); lose screen (crow eaten or drowned); opening video with skip button; home screen button (`MainMenu.cs`, `ButtonPop.cs`, `SettingsPanel.cs`, `PauseMenu.cs`, `LoseScreen.cs`, `TitleFloat.shader`, `Intro.cs`, `HomeScreen.cs`) | Menu scene, settings panel, pause, lose screen, PlayerPrefs saves, build scene order |
 | tutorial.md | Tutorial signs ("fruit tree. RAM!" etc.) and the wobbly key drawings (`TutorialTip.cs`, `Scribble.shader`, `PF_TutorialTip`) | Tutorial tips, the Tutorial drawings, the Scribble material |
 | grass.md | Swaying grass tufts that follow the fog wind (`GrassSway.shader`, `PF_GrassTuft`, `Fog Grid > Wind`) | Grass, the wind, the tuft sprites, anything that sways |
 | snakes.md | Roaming snakes that warn, eat the grounded crow, and die to the cow's ram (`Snake.cs`) | Snakes, lose-by-snake, anything that checks crow grounded or ram strength |
@@ -58,7 +58,7 @@ Gotchas:
 
 * The Web profile has its own Player Settings. While it is active, `Edit > Project Settings > Player` is ignored (yellow warning on that page). The "Player Settings" tab button at the top right of the Build Profiles window opens the global page, not the profile's copy. To edit the profile's copy, expand the "Player Settings" foldout in the middle of `File > Build Profiles > Web`.
 * `Player Settings > Web > Publishing Settings > Compression Format` is Brotli (see "Web build" below). In the YAML, `webGLCompressionFormat: 0` is Brotli and `2` is Disabled.
-* Audio is Unity's own (AudioSource). FMOD was removed on 24 Nov 2026. Browsers only start sound after the first click or key, so nothing plays before that.
+* Audio is Unity's own (AudioSource), routed through `Assets/Audio/AudioMixer.mixer` (Music and SFX groups). FMOD was removed on 24 Nov 2026. Browsers only start sound after the first click or key, so nothing plays before that.
 * Checked 18 Nov 2026 on itch.io: the build loads, fog renders, and WASD and arrow keys reach the game after clicking it. Full level not played through in the browser yet.
 
 ## Web build

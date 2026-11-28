@@ -46,7 +46,7 @@ Unity 6 / Input System 1.20 API (use these, not the old names):
 
 - `Rigidbody2D.linearVelocity`, not `velocity`.
 - `linearDamping` / `angularDamping`, not `drag` / `angularDrag`.
-- `FindFirstObjectByType` / `FindObjectsByType`, not `FindObjectOfType`.
+- `FindAnyObjectByType` / `FindObjectsByType`, not `FindObjectOfType`. In 6.6 `FindFirstObjectByType` is obsolete too (CS0618).
 - Unity 6.6: `FindObjectsByType<T>()` with no `FindObjectsSortMode` argument (that overload is obsolete).
 - New Input System only: `Keyboard.current` or an `InputAction`. Never `UnityEngine.Input`.
 - TextMeshPro: `using TMPro;` (comes with the uGUI package).
@@ -82,6 +82,8 @@ Gotchas (add a line every time a call fails for a non-obvious reason):
 - `manage_camera` screenshot `output_folder` must be inside the project: use `Library/Captures` (not imported, not in git).
 - Scene edits through `execute_code` don't mark the scene dirty, so `SaveOpenScenes()` silently skips them. Call `EditorSceneManager.MarkSceneDirty(scene)` before saving.
 - `execute_code` (CodeDom) fails on obsolete APIs (e.g. `SerializedProperty.objectReferenceInstanceIDValue`), and `Object` is ambiguous: write `UnityEngine.Object`.
+- AudioSource's serialized loop field is `Loop`, not `m_Loop`.
+- Through SerializedObject an AudioSource's clip reads as null; read `.clip` directly.
 - `manage_camera` screenshot always renders through Main Camera here, so overlay UI is missing; in Play mode it also logs harmless "PlayerLoop called recursively" errors.
 
 ## 8. Project map
@@ -91,14 +93,14 @@ Versions: Unity 6000.6.3f1; URP 17.6.0 (2D Renderer); Input System 1.20.0; uGUI 
 ```
 Assets/
   Scenes/      MainMenu, Intro, Level1, Level2, HomeScreen (build order: same); SampleScene = the prototype, not in build
-  Scripts/     FogGrid.cs, PlayerControl.cs
+  Scripts/     one script per behaviour, see docs/README.md
   Shaders/     FogSwirl.shader, GrassSway.shader, Scribble.shader
   Materials/   M_FogSwirl, M_MoteGlow, M_GrassSway, M_Scribble, M_BonkText
   Sprites/     Cow/ and Crow/ (4-direction pngs; crow also fly.png)
   Settings/    URP assets, InputSystem_Actions.inputactions, scene templates
   Art/         artist source art (Cow, Cutscene, Fog, Ground, Particles, Snake, Title, Tree, UI)
   Prefabs/     PF_ prefabs (Fruit, HUD, WallTree, GrassTuft, SettingsPanel, TutorialTip, BonkPop)
-  Audio/       create when first needed: sound and music clips
+  Audio/       sound and music clips (flat, mp3) and AudioMixer.mixer
   Sandbox/     create when first needed: experiments, nothing references it
 docs/          one doc per system, see docs/README.md
 CowAndCrow/    WebGL build output, gitignored

@@ -96,6 +96,9 @@ public class TutorialTip : MonoBehaviour
 
     [Tooltip("Played when a sign opens (UI_guide). Empty = silent.")]
     [SerializeField] private AudioClip guideClip;
+    [Tooltip("Volume of the guide sound.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float guideVolume = 0.5f;
 
     private AudioSource audioSource;
     bool showing, closing, hit;
@@ -214,7 +217,7 @@ public class TutorialTip : MonoBehaviour
         if (mover != null) moverStart = mover.position;
         showing = true;
         timer = 0f;
-        if (guideClip != null) audioSource.PlayOneShot(guideClip);
+        if (guideClip != null) audioSource.PlayOneShot(guideClip, guideVolume);
         sign.localScale = baseScale * popIn.Evaluate(0f);   // no full-size flash before the first LateUpdate
         sign.gameObject.SetActive(true);
     }
